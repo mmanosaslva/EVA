@@ -1,7 +1,7 @@
 # EVA
 PWA de salud menstrual privacy-first · React + FastAPI + ML
 
-# --- Issues para GitHub Projects
+## Issues para GitHub Projects
 ## 60 Issues · 9 Sprints · 3 Developers
 
 **Equipo:**
