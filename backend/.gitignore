@@ -1,0 +1,19 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Entorno
+.env
+
+# Modelos ML (nunca versionar)
+app/ml_models/*.pkl
+ml_models/
+
+# IDE
+.vscode/
+.idea/
