@@ -8,6 +8,7 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 - 🟣 **Daniel** → Frontend (principal) + participa en Backend y AI/ML
 - 🟡 **Meriyei** → Backend (principal) + participa en AI/ML y Testing
 - 🔵 **Madeleine** → AI/ML + Testing + DevOps (principal) + participa en Frontend y Backend
+- 🟠 **Joshua** → ML/Data Science (principal) + participa en Testing y DevOps ML
 
 **Labels a crear en GitHub:**
 `frontend` `backend` `database` `ml` `ai` `pwa` `testing` `devops` `analytics` `auth` `setup` `docs` `security` `performance` `monitoring`
@@ -27,6 +28,7 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 | 6 | Endpoint GET /health + CORS configurado | Meriyei | `backend` `setup` |
 | 7 | Configurar CI/CD con GitHub Actions | Madeleine | `devops` `setup` |
 | 8 | Configurar Vitest para testing unitario frontend *(Daniel apoya)* | Madeleine | `testing` `setup` `frontend` |
+| 61 | Setup entorno ML local (Prophet + Ollama + Mistral) | Joshua | `ml` `setup` |
 
 ---
 
@@ -83,7 +85,7 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 | 30 | Widget 'Próximo período' en el dashboard | Daniel | `frontend` |
 | 31 | Educación contextual por fase del ciclo *(Madeleine define contenido médico)* | Daniel | `frontend` |
 | 32 | **Integrar Ollama (LLM local gratuito) para insights** *(Meriyei define contexto)* | Madeleine | `ml` `ai` `backend` |
-| 33 | Tests unitarios: prediction_service.py | Madeleine | `testing` `ml` |
+| 33 | Tests unitarios: prediction_service.py | Joshua | `testing` `ml` |
 
 ---
 
@@ -106,12 +108,12 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 
 | # | Título | Asignado | Labels |
 |---|--------|----------|--------|
-| 40 | ml_service.py — Prophet para predicción de series de tiempo *(Meriyei define features)* | Madeleine | `ml` `backend` |
-| 41 | Pipeline de features para el modelo ML | Madeleine | `ml` |
-| 42 | Cron job de reentrenamiento nocturno (Render) *(Meriyei hace queries)* | Madeleine | `ml` `devops` |
+| 40 | ml_service.py — Prophet para predicción de series de tiempo *(Meriyei define features)* | Joshua | `ml` `backend` |
+| 41 | Pipeline de features para el modelo ML | Joshua | `ml` |
+| 42 | Cron job de reentrenamiento nocturno (Render) *(Meriyei hace queries)* | Joshua *(Madeleine valida deploy)* | `ml` `devops` |
 | 43 | **Integrar LLM con datos reales del ciclo** *(Meriyei valida privacidad)* | Madeleine | `ml` `ai` `backend` |
-| 44 | Métricas de precisión: MAE del modelo ML | Madeleine | `testing` `ml` |
-| 45 | Tests: ml_service.py con datos sintéticos | Madeleine | `testing` `ml` |
+| 44 | Métricas de precisión: MAE del modelo ML | Joshua | `testing` `ml` |
+| 45 | Tests: ml_service.py con datos sintéticos | Joshua | `testing` `ml` |
 | 46 | UI: chat de insights con el asistente EVA *(Madeleine define prompts)* | Daniel | `frontend` `ai` |
 
 ---
@@ -121,13 +123,14 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 
 | # | Título | Asignado | Labels |
 |---|--------|----------|--------|
-| 47 | Endpoint GET /predictions/next — integración con Prophet *(Madeleine valida)* | Meriyei | `backend` `ml` |
+| 47 | Endpoint GET /predictions/next — integración con Prophet *(Joshua valida)* | Meriyei | `backend` `ml` |
 | 48 | Endpoint GET /export/csv | Meriyei | `backend` |
 | 49 | Endpoint GET /export/pdf — informe médico *(Daniel diseña layout)* | Meriyei | `backend` |
 | 50 | UI de exportación de datos | Daniel | `frontend` |
 | 51 | Actualizar UI de predicción: mostrar precisión del modelo *(Madeleine define confianza)* | Daniel | `frontend` `ml` |
 | 52 | Tests E2E: flujo de exportación PDF y CSV | Madeleine | `testing` |
 | 53 | Configurar Sentry para monitoreo de errores *(Daniel integra en frontend)* | Madeleine | `devops` `monitoring` |
+| 62 | Script evaluate_models.py + integración CI/CD | Joshua | `ml` `testing` `devops` |
 
 ---
 
@@ -150,12 +153,14 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 
 | Developer | Issues principales | Issues como participante | Total involucrado |
 |-----------|-------------------|--------------------------|-------------------|
-| Daniel | 22 | 10 | 32 |
-| Meriyei | 19 | 11 | 30 |
-| Madeleine | 19 | 12 | 31 |
+| Daniel    | 22                | 10                       | 32                |
+| Meriyei   | 19                | 11                       | 30                |
+| Madeleine | 13                | 12                       | 25                |
+| Joshua    | 8                 | 3                        | 11                |
 
 ### Sectores con participación cruzada:
 - **Daniel** toca: Frontend (22) + Backend/auth (2) + AI/frontend (1)
 - **Meriyei** toca: Backend (19) + AI/predicción (3) + Testing review (3)
-- **Madeleine** toca: ML/Testing/DevOps (19) + Frontend/PWA (3) + Backend hooks (2)
+- **Madeleine** toca: Testing E2E/DevOps (13) + Frontend/PWA (3) + LLM backend (2)
+- **Joshua** toca: ML/Prophet (6) + Tests ML (2) + Auditoría privacidad (1)
 
