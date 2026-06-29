@@ -1,0 +1,53 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend.yml'
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Check frontend exists
+        id: check
+        run: |
+          if [ -f "frontend/package.json" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        shell: bash
+
+      - name: Install dependencies
+        if: steps.check.outputs.exists == 'true'
+        run: npm ci
+        working-directory: frontend
+
+      - name: Run linter
+        if: steps.check.outputs.exists == 'true'
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Run tests
+        if: steps.check.outputs.exists == 'true'
+        run: npm run test -- --run
+        working-directory: frontend
+
+      - name: Build
+        if: steps.check.outputs.exists == 'true'
+        run: npm run build
+        working-directory: frontend
