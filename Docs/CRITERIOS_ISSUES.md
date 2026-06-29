@@ -4,6 +4,8 @@
 > Copia el contenido de cada issue en el campo **Description** al crear la issue en GitHub.
 > Los criterios marcados con `- [ ]` se convierten en checkboxes interactivos en GitHub.
 
+> **Última actualización:** Sprint 1 — Joshua incorporado al equipo (Issues #33, #40–#42, #44–#45, #61, #62 reasignadas/creadas)
+
 ---
 
 ## Sprint 1 — Fundación
@@ -165,6 +167,36 @@ Automatizar la verificación de calidad del código en cada push al repositorio.
 ## Notas técnicas
 Usar `ubuntu-latest` como runner. Los secretos necesarios: `SUPABASE_URL_TEST`,
 `SUPABASE_JWT_SECRET_TEST` para el entorno de pruebas del CI.
+```
+
+---
+
+### Issue #61 — [S1] Setup entorno ML local (Prophet + Ollama + Mistral)
+**Asignado:** Joshua | **Labels:** `ml` `setup`
+
+```
+## Descripción
+Configurar el entorno local de Machine Learning para desarrollo: instalar Prophet,
+Ollama con el modelo Mistral, y verificar que el pipeline ML básico funciona.
+
+## Criterios de aceptación
+- [ ] Prophet instalado y verificado: `from prophet import Prophet` sin errores
+- [ ] pystan instalado como dependencia de Prophet (puede requerir compilación)
+- [ ] Ollama instalado localmente (https://ollama.ai/install.sh)
+- [ ] Modelo Mistral descargado: `ollama pull mistral` (4.1 GB)
+- [ ] Verificación: `ollama run mistral "hola"` responde en español
+- [ ] joblib instalado para serialización de modelos `.pkl`
+- [ ] scikit-learn instalado para métricas (MAE)
+- [ ] Script de verificación `scripts/verify_ml_env.py` creado y ejecuta sin errores
+- [ ] `requirements.txt` actualizado con las nuevas dependencias y sus versiones exactas
+- [ ] Instrucciones de setup ML agregadas al `README.md` del backend
+
+## Notas técnicas
+En Windows, Prophet puede requerir: `pip install prophet --no-build-isolation`
+
+El modelo Mistral ocupa ~4 GB de VRAM/RAM — verificar que la máquina de desarrollo tiene suficiente memoria.
+
+Ollama debe estar corriendo en background (`ollama serve`) para que el backend lo use.
 ```
 
 ---
@@ -772,7 +804,7 @@ que no se filtre PII. Ver estructura de contexto en `ML_STRATEGY.md`, sección 1
 ---
 
 ### Issue #33 — [S5] Tests unitarios: prediction_service.py
-**Asignado:** Madeleine | **Labels:** `testing` `ml`
+**Asignado:** Joshua | **Labels:** `testing` `ml`
 
 ```
 ## Descripción
@@ -938,7 +970,7 @@ respuesta. El `client_id` único garantiza que no se dupliquen datos.
 ---
 
 ### Issue #40 — [S7] ml_service.py — Prophet para predicción de series de tiempo
-**Asignado:** Madeleine | **Participa:** Meriyei | **Labels:** `ml` `backend`
+**Asignado:** Joshua | **Participa:** Meriyei | **Labels:** `ml` `backend`
 
 ```
 ## Descripción
@@ -962,7 +994,7 @@ basándose en las queries de `cycle_repo.py`.
 ---
 
 ### Issue #41 — [S7] Pipeline de features para el modelo ML
-**Asignado:** Madeleine | **Labels:** `ml`
+**Asignado:** Joshua | **Labels:** `ml`
 
 ```
 ## Descripción
@@ -986,7 +1018,7 @@ información que identifique a la usuaria (solo estadísticas del ciclo).
 ---
 
 ### Issue #42 — [S7] Cron job de reentrenamiento nocturno (Render)
-**Asignado:** Madeleine | **Participa:** Meriyei | **Labels:** `ml` `devops`
+**Asignado:** Joshua | **Participa:** Meriyei, Madeleine | **Labels:** `ml` `devops`
 
 ```
 ## Descripción
@@ -1031,7 +1063,7 @@ del servicio durante las pruebas.
 ---
 
 ### Issue #44 — [S7] Métricas de precisión: MAE del modelo ML
-**Asignado:** Madeleine | **Labels:** `testing` `ml`
+**Asignado:** Joshua | **Labels:** `testing` `ml`
 
 ```
 ## Descripción
@@ -1053,7 +1085,7 @@ con la fixture `make_cycles(n, base, noise)` del test suite.
 ---
 
 ### Issue #45 — [S7] Tests: ml_service.py con datos sintéticos
-**Asignado:** Madeleine | **Labels:** `testing` `ml`
+**Asignado:** Joshua | **Labels:** `testing` `ml`
 
 ```
 ## Descripción
@@ -1262,6 +1294,34 @@ Configurar `beforeSend` hook para sanitizar datos sensibles antes de enviarlos.
 
 ---
 
+### Issue #62 — [S8] Script evaluate_models.py + integración CI/CD
+**Asignado:** Joshua | **Labels:** `ml` `testing` `devops`
+
+```
+## Descripción
+Implementar el script de evaluación global de modelos Prophet y conectarlo
+al pipeline de CI/CD para detectar regresiones de precisión automáticamente.
+
+## Criterios de aceptación
+- [ ] Script `scripts/evaluate_models.py` implementado (ver ML_STRATEGY.md, sección 8)
+- [ ] El script evalúa todos los modelos `.pkl` existentes con holdout del último ciclo
+- [ ] MAE global calculado y mostrado: promedio, mínimo, máximo, cantidad de modelos
+- [ ] Comparación heurística vs Prophet documentada con números reales en la salida
+- [ ] Si MAE global > 2.0 días, el script retorna exit code 1 (falla el CI)
+- [ ] Workflow GitHub Actions creado: `.github/workflows/ml-eval.yml`
+- [ ] El workflow corre `evaluate_models.py` en cada PR que toque `services/ml_service.py`
+- [ ] Dataset de prueba sintético creado: 50 usuarias con 8+ ciclos cada una
+- [ ] MAE global < 1.5 días con el dataset sintético (criterio de aprobación)
+- [ ] Reporte de evaluación guardado como artefacto en GitHub Actions
+
+## Notas técnicas
+Usar la fixture `make_cycles(n, base, noise)` ya definida en `tests/test_ml_service.py`
+para generar el dataset sintético. El script debe poder correr sin Supabase real
+(usar datos sintéticos en archivo JSON o generar en memoria).
+```
+
+---
+
 ## Sprint 9 — Pulido y lanzamiento
 
 ---
@@ -1434,8 +1494,9 @@ para identificar problemas de conexión o carga en el servidor de Render.
 |---|---|---|
 | Daniel | 22 issues | ~110 checkboxes |
 | Meriyei | 19 issues | ~100 checkboxes |
-| Madeleine | 19 issues | ~95 checkboxes |
-| **Total** | **60 issues** | **~305 checkboxes** |
+| Madeleine | 13 issues | ~65 checkboxes |
+| Joshua | 8 issues | ~40 checkboxes |
+| **Total** | **62 issues** | **~315 checkboxes** |
 
 ---
 
