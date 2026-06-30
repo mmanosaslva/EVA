@@ -8,31 +8,25 @@ interface DayDetailProps {
   day: CalendarDay | null;
   onClose: () => void;
   onEditCycle?: (cycleId: string) => void;
-  onRegisterDay?: (date: string, cycleId: string) => void;
-  onViewHistory?: (cycleId: string) => void;
 }
 
-export function DayDetail({
-  day,
-  onClose,
-  onEditCycle,
-  onRegisterDay,
-  onViewHistory,
-}: DayDetailProps) {
-  if (!day) return null;
-
-  const formattedDate = day.date.toLocaleDateString("es-ES", {
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("es-ES", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
+}
+
+export function DayDetail({ day, onClose, onEditCycle }: DayDetailProps) {
+  if (!day) return null;
 
   return (
     <Card padding="md" className="mx-1 mt-3">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-base font-semibold text-text-primary capitalize">
-            {formattedDate}
+            {formatDate(day.date)}
           </h3>
           {day.phase ? (
             <Badge variant={day.phase} className="mt-1">
@@ -115,40 +109,15 @@ export function DayDetail({
         </p>
       )}
 
-      {day.cycleId && (
-        <div className="mt-4 pt-3 border-t border-border space-y-2">
-          {onRegisterDay && (
-            <Button
-              variant="primary"
-              className="w-full text-sm"
-              onClick={() =>
-                onRegisterDay(
-                  day.date.toISOString().split("T")[0],
-                  day.cycleId!,
-                )
-              }
-            >
-              {day.dailyLog ? "Editar registro del día" : "Registrar síntomas"}
-            </Button>
-          )}
-          {onViewHistory && (
-            <Button
-              variant="secondary"
-              className="w-full text-sm"
-              onClick={() => onViewHistory(day.cycleId!)}
-            >
-              Ver historial del ciclo
-            </Button>
-          )}
-          {onEditCycle && (
-            <Button
-              variant="ghost"
-              className="w-full text-sm"
-              onClick={() => onEditCycle(day.cycleId!)}
-            >
-              Editar este ciclo
-            </Button>
-          )}
+      {day.cycleId && onEditCycle && (
+        <div className="mt-4 pt-3 border-t border-border">
+          <Button
+            variant="ghost"
+            className="w-full text-sm"
+            onClick={() => onEditCycle(day.cycleId!)}
+          >
+            Editar este ciclo
+          </Button>
         </div>
       )}
     </Card>

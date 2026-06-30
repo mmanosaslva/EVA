@@ -4,7 +4,6 @@ import DemoPage from "./pages/DemoPage";
 import CalendarPage from "./pages/CalendarPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import SymptomHistoryPage from "./pages/SymptomHistoryPage";
 
 function App() {
   return (
@@ -17,14 +16,6 @@ function App() {
           element={
             <PrivateRoute>
               <CalendarPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/history/:cycleId"
-          element={
-            <PrivateRoute>
-              <SymptomHistoryPage />
             </PrivateRoute>
           }
         />
