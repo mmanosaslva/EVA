@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-eva-50: #fdf2f8;
+  --color-eva-100: #fce7f3;
+  --color-eva-200: #fbcfe8;
+  --color-eva-300: #f9a8d4;
+  --color-eva-400: #f472b6;
+  --color-eva-500: #ec4899;
+  --color-eva-600: #db2777;
+  --color-eva-700: #be185d;
+  --color-eva-800: #9d174d;
+  --color-eva-900: #831843;
+
+  --color-lavender-50: #f5f3ff;
+  --color-lavender-100: #ede9fe;
+  --color-lavender-200: #ddd6fe;
+  --color-lavender-300: #c4b5fd;
+  --color-lavender-400: #a78bfa;
+  --color-lavender-500: #8b5cf6;
+  --color-lavender-600: #7c3aed;
+  --color-lavender-700: #6d28d9;
+  --color-lavender-800: #5b21b6;
+  --color-lavender-900: #4c1d95;
+
+  --color-green-50: #ecfdf5;
+  --color-green-100: #d1fae5;
+  --color-green-200: #a7f3d0;
+  --color-green-300: #6ee7b7;
+  --color-green-400: #34d399;
+  --color-green-500: #10b981;
+  --color-green-600: #059669;
+  --color-green-700: #047857;
+  --color-green-800: #065f46;
+  --color-green-900: #064e3b;
+
+  --color-surface: #ffffff;
+  --color-surface-alt: #fdf8fa;
+  --color-text-primary: #1e1b2e;
+  --color-text-secondary: #6b6375;
+  --color-text-muted: #9ca3af;
+  --color-border: #e5e4e7;
+  --color-border-focus: #ec4899;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  body {
+    @apply bg-surface text-text-primary font-sans antialiased;
+    margin: 0;
+  }
+
+  * {
+    @apply border-border;
+  }
+}
