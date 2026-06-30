@@ -1,14 +1,23 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCycles } from "../hooks/useCycles";
+import type { DailyLog } from "../lib/types";
+import { getDailyLogsByCycle } from "../services/dailyLogService";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Calendar } from "../components/calendar/Calendar";
 import { CycleForm } from "../components/cycle/CycleForm";
+import { DailyLogForm } from "../components/symptoms/DailyLogForm";
 
 export default function CalendarPage() {
+  const navigate = useNavigate();
   const { cycles, loading, error, refetch } = useCycles();
   const [showForm, setShowForm] = useState(false);
   const [editingCycleId, setEditingCycleId] = useState<string | null>(null);
+  const [showLogForm, setShowLogForm] = useState(false);
+  const [logDate, setLogDate] = useState<string>("");
+  const [logCycleId, setLogCycleId] = useState<string>("");
+  const [editingLog, setEditingLog] = useState<DailyLog | null>(null);
 
   const editingCycle = editingCycleId
     ? cycles.find((c) => c.id === editingCycleId)
@@ -24,16 +33,65 @@ export default function CalendarPage() {
     setShowForm(true);
   }, []);
 
-  const handleFormSuccess = useCallback(() => {
+  const handleRegisterDay = useCallback(
+    async (date: string, cycleId: string) => {
+      const logs = await getDailyLogsByCycle(cycleId);
+      const existing = logs.find((l: DailyLog) => l.date === date) ?? null;
+      setEditingLog(existing);
+      setLogDate(date);
+      setLogCycleId(cycleId);
+      setShowLogForm(true);
+    },
+    [],
+  );
+
+  const handleViewHistory = useCallback(
+    (cycleId: string) => {
+      navigate(`/history/${cycleId}`);
+    },
+    [navigate],
+  );
+
+  const handleCycleFormSuccess = useCallback(() => {
     setShowForm(false);
     setEditingCycleId(null);
     refetch();
   }, [refetch]);
 
-  const handleFormCancel = useCallback(() => {
+  const handleCycleFormCancel = useCallback(() => {
     setShowForm(false);
     setEditingCycleId(null);
   }, []);
+
+  const handleLogFormSuccess = useCallback(() => {
+    setShowLogForm(false);
+    setEditingLog(null);
+    refetch();
+  }, [refetch]);
+
+  const handleLogFormCancel = useCallback(() => {
+    setShowLogForm(false);
+    setEditingLog(null);
+  }, []);
+
+  if (showLogForm) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-text-primary">
+            Mi Calendario
+          </h1>
+        </div>
+        <DailyLogForm
+          cycleId={logCycleId}
+          date={logDate}
+          initialData={editingLog}
+          onSuccess={handleLogFormSuccess}
+          onCancel={handleLogFormCancel}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
@@ -76,12 +134,17 @@ export default function CalendarPage() {
                 }
               : undefined
           }
-          onSuccess={handleFormSuccess}
-          onCancel={handleFormCancel}
+          onSuccess={handleCycleFormSuccess}
+          onCancel={handleCycleFormCancel}
         />
       ) : (
         <Card padding="sm">
-          <Calendar cycles={cycles} onEditCycle={handleEditCycle} />
+          <Calendar
+            cycles={cycles}
+            onEditCycle={handleEditCycle}
+            onRegisterDay={handleRegisterDay}
+            onViewHistory={handleViewHistory}
+          />
         </Card>
       )}
     </div>
