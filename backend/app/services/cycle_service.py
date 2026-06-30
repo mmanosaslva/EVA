@@ -14,7 +14,7 @@ def _calc_duration(start: date, end: Optional[date]) -> Optional[int]:
 
 
 def _row_to_dict(row, duration: Optional[int] = None) -> dict:
-    data = dict(row._mapping)
+    data = row if isinstance(row, dict) else dict(row._mapping)
     data["duration_days"] = duration or _calc_duration(data["start_date"], data.get("end_date"))
     data["id"] = str(data["id"])
     data["user_id"] = str(data["user_id"])
@@ -86,7 +86,7 @@ async def delete_cycle(cycle_id: str, user_id: str) -> None:
 
 
 def _log_row_to_dict(row) -> dict:
-    data = dict(row._mapping)
+    data = row if isinstance(row, dict) else dict(row._mapping)
     data["id"] = str(data["id"])
     data["date"] = data["date"].isoformat() if isinstance(data.get("date"), date) else data.get("date")
     data["temperature"] = float(data["temperature"]) if data.get("temperature") else None
