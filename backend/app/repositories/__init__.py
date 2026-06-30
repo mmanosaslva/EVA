@@ -9,6 +9,21 @@ from app.repositories.cycle_repo import (
 )
 from app.repositories.daily_log_repo import (
     get_logs_by_cycle,
+    get_logs_by_cycle_paginated,
+    create_daily_log,
+    get_daily_log_by_id,
+    get_daily_log_by_date,
+    update_daily_log,
+    delete_daily_log,
+    count_logs_by_cycle,
+)
+from app.repositories.symptom_repo import (
+    get_all_symptoms,
+    get_symptom_by_id,
+    get_symptoms_by_log,
+    add_symptoms_to_log,
+    remove_symptoms_from_log,
+    remove_all_symptoms_from_log,
 )
 
 __all__ = [
@@ -20,4 +35,17 @@ __all__ = [
     "delete_cycle",
     "count_cycles",
     "get_logs_by_cycle",
+    "get_logs_by_cycle_paginated",
+    "create_daily_log",
+    "get_daily_log_by_id",
+    "get_daily_log_by_date",
+    "update_daily_log",
+    "delete_daily_log",
+    "count_logs_by_cycle",
+    "get_all_symptoms",
+    "get_symptom_by_id",
+    "get_symptoms_by_log",
+    "add_symptoms_to_log",
+    "remove_symptoms_from_log",
+    "remove_all_symptoms_from_log",
 ]
