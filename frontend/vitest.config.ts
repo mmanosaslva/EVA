@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -36,19 +36,19 @@ export default defineConfig({
           },
         ],
         screenshots: [
-        {
-          src: "/screenshots/eva-screenshot.png",
-          sizes: "1024x1792",
-          type: "image/png",
-          form_factor: "narrow"
-        },
-        {
-          src: "/screenshots/eva-screenshot-carga.png",
-          sizes: "1024x1792",
-          type: "image/png",
-          form_factor: "narrow"
-        }
-      ],
+          {
+            src: "/screenshots/eva-screenshot.png",
+            sizes: "1024x1792",
+            type: "image/png",
+            form_factor: "narrow",
+          },
+          {
+            src: "/screenshots/eva-screenshot-carga.png",
+            sizes: "1024x1792",
+            type: "image/png",
+            form_factor: "narrow",
+          },
+        ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
@@ -65,4 +65,10 @@ export default defineConfig({
       },
     }),
   ],
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.ts",
+    css: true,
+  },
 });

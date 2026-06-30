@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.routers import health
 
 app = FastAPI(
     title="EVA API",
@@ -25,7 +26,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Routers ──────────────────────────────────────────────
-# Sprint 1: solo health. Los demás se agregan por sprint.
-from app.routers import health
 app.include_router(health.router)
