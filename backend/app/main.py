@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.routers import health, cycles, symptoms, analytics
+from app.routers import health, cycles, symptoms, analytics, predictions
 
 app = FastAPI(
     title="EVA API",
@@ -31,3 +31,4 @@ app.include_router(cycles.router)
 app.include_router(symptoms.symptoms_router)
 app.include_router(symptoms.daily_logs_router)
 app.include_router(analytics.router)
+app.include_router(predictions.router)

@@ -384,7 +384,7 @@ Usuario → Supabase Auth → JWT token
 | Distribución | App Store (burocracia) | Link directo | Sin esperar aprobaciones |
 | Actualizaciones | Días de review | Instantáneas | Bugs corregibles al momento |
 | Costo | $99/año (Apple) | $0 | Apps de salud tienen cuotas altas |
-| Código | iOS + Android separados | Un solo código | **Clave siendo un equipo de 3** |
+| Código | iOS + Android separados | Un solo código | **Clave siendo un equipo de 4** |
 
 > **Conclusión:** PWA = 90% de los beneficios con 10% del esfuerzo.
 
@@ -484,6 +484,7 @@ frontend/
 | **Daniel** | Frontend (React, UI, PWA, IndexedDB) | Backend (auth), AI/ML (chat UI) |
 | **Meriyei** | Backend + BD (FastAPI, PostgreSQL, SQLAlchemy) | AI/ML (features, contexto LLM), Testing (revisión) |
 | **Madeleine** | AI/ML + Testing + DevOps (Prophet, Ollama, Playwright, CI/CD) | Frontend (PWA offline), Backend (queries) |
+| **Joshua** | ML/Data Science (Prophet, features, modelos) | Testing ML, DevOps ML |
 
 **Distribución de issues por developer:**
 
@@ -492,6 +493,7 @@ frontend/
 | Daniel | 22 | 10 | 32 |
 | Meriyei | 19 | 11 | 30 |
 | Madeleine | 19 | 12 | 31 |
+| Joshua | 8 | 3 | 11 |
 
 **Metodología de trabajo:**
 - Daily de 10 minutos al inicio de cada jornada
@@ -620,7 +622,7 @@ cd frontend && npx playwright test
 
 | Decisión | Alternativa descartada | Razón |
 |---|---|---|
-| PWA en lugar de app nativa | React Native | 1 código vs 2, siendo equipo de 3 |
+| PWA en lugar de app nativa | React Native | 1 código vs 2, siendo equipo de 4 |
 | Supabase Auth en lugar de JWT custom | FastAPI + JWT | 10 líneas vs 200+, incluye recuperación |
 | SQLAlchemy Core en lugar de ORM | SQLAlchemy ORM | Más control, menos magia oculta |
 | Prophet en lugar de Random Forest | Random Forest | Diseñado para series de tiempo cíclicas |
