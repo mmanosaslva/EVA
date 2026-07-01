@@ -10,7 +10,7 @@ test.describe("Flujo de registro de síntomas", () => {
   });
 
   test("muestra la página de síntomas con el formulario de registro", async ({ page }) => {
-    await page.goto(SYMPTOMS_URL);
+    await page.goto(SYMPTOMS_URL, { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole("tab", { name: /registrar/i })).toBeVisible();
     await expect(page.getByRole("tab", { name: /historial/i })).toBeVisible();
@@ -18,7 +18,7 @@ test.describe("Flujo de registro de síntomas", () => {
   });
 
   test("permite seleccionar un síntoma y ajustar intensidad", async ({ page }) => {
-    await page.goto(SYMPTOMS_URL);
+    await page.goto(SYMPTOMS_URL, { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     const symptomBtn = page.getByRole("button", { name: /dolor abdominal/i });
@@ -44,7 +44,7 @@ test.describe("Flujo de registro de síntomas", () => {
   });
 
   test("permite seleccionar nivel de flujo", async ({ page }) => {
-    await page.goto(SYMPTOMS_URL);
+    await page.goto(SYMPTOMS_URL, { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     const flowBtn = page.getByRole("button", { name: /medio/i });
@@ -55,7 +55,7 @@ test.describe("Flujo de registro de síntomas", () => {
   });
 
   test("completa el formulario y guarda el registro", async ({ page }) => {
-    await page.goto(SYMPTOMS_URL);
+    await page.goto(SYMPTOMS_URL, { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     await page.getByRole("button", { name: /dolor abdominal/i }).click();
@@ -76,7 +76,7 @@ test.describe("Flujo de registro de síntomas", () => {
   });
 
   test("muestra validación de temperatura fuera de rango", async ({ page }) => {
-    await page.goto(SYMPTOMS_URL);
+    await page.goto(SYMPTOMS_URL, { waitUntil: "networkidle" });
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     const tempInput = page.getByLabel(/temperatura basal/i);
