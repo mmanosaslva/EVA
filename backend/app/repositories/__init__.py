@@ -6,6 +6,7 @@ from app.repositories.cycle_repo import (
     update_cycle,
     delete_cycle,
     count_cycles,
+    get_cycles_with_features,
 )
 from app.repositories.daily_log_repo import (
     get_logs_by_cycle,
@@ -37,6 +38,15 @@ from app.repositories.insight_repo import (
     get_insights_history,
 )
 
+from app.repositories.ml_repo import (
+    upsert_ml_model,
+    get_ml_model,
+)
+
+from app.repositories.user_repo import (
+    get_users_with_new_cycles,
+)
+
 __all__ = [
     "get_cycles_by_user",
     "get_cycle_by_id",
@@ -64,4 +74,8 @@ __all__ = [
     "resolve_client_id",
     "save_insight",
     "get_insights_history",
+    "upsert_ml_model",
+    "get_ml_model",
+    "get_cycles_with_features",
+    "get_users_with_new_cycles",
 ]

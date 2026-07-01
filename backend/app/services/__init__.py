@@ -1,4 +1,4 @@
-from app.services import cycle_service, symptom_service, analytics_service, prediction_service, sync_service, llm_service
+from app.services import cycle_service, symptom_service, analytics_service, prediction_service, sync_service, llm_service, ml_service
 
 __all__ = [
     "cycle_service",
@@ -7,4 +7,5 @@ __all__ = [
     "prediction_service",
     "sync_service",
     "llm_service",
+    "ml_service",
 ]
