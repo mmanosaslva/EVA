@@ -37,6 +37,11 @@ from app.repositories.insight_repo import (
     get_insights_history,
 )
 
+from app.repositories.user_repo import (
+    get_users_with_new_cycles,
+    get_all_active_users,
+)
+
 __all__ = [
     "get_cycles_by_user",
     "get_cycle_by_id",
@@ -64,4 +69,6 @@ __all__ = [
     "resolve_client_id",
     "save_insight",
     "get_insights_history",
+    "get_users_with_new_cycles",
+    "get_all_active_users",
 ]

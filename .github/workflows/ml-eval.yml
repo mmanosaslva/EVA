@@ -1,0 +1,33 @@
+name: ML Evaluation
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/app/services/ml_service.py'
+      - 'backend/app/repositories/cycle_repo.py'
+      - 'backend/scripts/evaluate_models.py'
+      - '.github/workflows/ml-eval.yml'
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  evaluate:
+    name: Evaluate Prophet vs Heuristic
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r backend/requirements.txt
+
+      - name: Run ML evaluation (synthetic)
+        run: |
+          python backend/scripts/evaluate_models.py --users 50 --cycles 10 --noise 5
