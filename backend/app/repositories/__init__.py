@@ -43,6 +43,10 @@ from app.repositories.ml_repo import (
     get_ml_model,
 )
 
+from app.repositories.user_repo import (
+    get_users_with_new_cycles,
+)
+
 __all__ = [
     "get_cycles_by_user",
     "get_cycle_by_id",
@@ -73,4 +77,5 @@ __all__ = [
     "upsert_ml_model",
     "get_ml_model",
     "get_cycles_with_features",
+    "get_users_with_new_cycles",
 ]
