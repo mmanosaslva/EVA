@@ -1,4 +1,7 @@
 import type { SymptomCatalog, DailyLog, DailySymptom } from "../lib/types";
+import { bulkSaveCatalog, getSymptomsCatalog as getCachedCatalog } from "../db/logStore";
+import { saveLog, saveSymptoms } from "../db/logStore";
+import { enqueue } from "../db";
 
 const MOCK_SYMPTOMS: SymptomCatalog[] = [
   { id: 1, name: "Dolor abdominal", category: "fisica", common_phase: "menstruacion" },
@@ -40,7 +43,35 @@ interface MockLogStore {
 const MOCK_LOGS: MockLogStore = {};
 
 export async function getSymptomsCatalog(): Promise<SymptomCatalog[]> {
+  try {
+    const cached = await getCachedCatalog();
+    if (cached.length > 0) {
+      return cached.map((s) => ({
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        common_phase: s.common_phase,
+      }));
+    }
+  } catch {
+    // IndexedDB no disponible, usar mock
+  }
+
   await new Promise((resolve) => setTimeout(resolve, 200));
+
+  try {
+    await bulkSaveCatalog(
+      MOCK_SYMPTOMS.map((s) => ({
+        id: s.id,
+        name: s.name,
+        category: s.category,
+        common_phase: s.common_phase,
+      })),
+    );
+  } catch {
+    // IndexedDB no disponible, continuar sin cache
+  }
+
   return MOCK_SYMPTOMS;
 }
 
@@ -94,6 +125,43 @@ export async function createDailyLog(data: {
   MOCK_LOGS[data.cycle_id].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
+
+  try {
+    await saveLog(
+      {
+        id: log.id,
+        cycle_id: data.cycle_id,
+        date: log.date,
+        flow_level: log.flow_level,
+        temperature: log.temperature,
+        notes: log.notes,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      "pending",
+    );
+
+    if (data.symptoms.length > 0) {
+      await saveSymptoms(
+        data.symptoms.map((s) => ({
+          log_id: log.id,
+          symptom_id: s.symptom_id,
+          intensity: s.intensity,
+        })),
+      );
+    }
+
+    await enqueue({
+      entity: "dailyLog",
+      operation: "create",
+      entityId: log.id,
+      payload: data,
+      createdAt: new Date().toISOString(),
+      retryCount: 0,
+    });
+  } catch {
+    // IndexedDB no disponible
+  }
 
   return log;
 }

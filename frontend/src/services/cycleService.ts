@@ -1,4 +1,5 @@
 import type { Cycle, CyclesResponse } from "../lib/types";
+import { saveCycle, enqueue } from "../db";
 
 const MOCK_CYCLES: Cycle[] = [
   {
@@ -64,6 +65,33 @@ export async function createCycle(data: {
   };
 
   MOCK_CYCLES.unshift(newCycle);
+
+  try {
+    await saveCycle(
+      {
+        id: newCycle.id,
+        user_id: "offline-user",
+        start_date: newCycle.start_date,
+        end_date: newCycle.end_date,
+        duration_days: newCycle.duration_days,
+        created_at: newCycle.created_at,
+        updated_at: newCycle.created_at,
+      },
+      "pending",
+    );
+
+    await enqueue({
+      entity: "cycle",
+      operation: "create",
+      entityId: newCycle.id,
+      payload: data,
+      createdAt: new Date().toISOString(),
+      retryCount: 0,
+    });
+  } catch {
+    // IndexedDB no disponible, continuar sin persistencia
+  }
+
   return newCycle;
 }
 
@@ -87,6 +115,32 @@ export async function updateCycle(
         ) + 1
       : MOCK_CYCLES[idx].duration_days,
   };
+
+  try {
+    await saveCycle(
+      {
+        id: MOCK_CYCLES[idx].id,
+        user_id: "offline-user",
+        start_date: MOCK_CYCLES[idx].start_date,
+        end_date: MOCK_CYCLES[idx].end_date,
+        duration_days: MOCK_CYCLES[idx].duration_days,
+        created_at: MOCK_CYCLES[idx].created_at,
+        updated_at: new Date().toISOString(),
+      },
+      "pending",
+    );
+
+    await enqueue({
+      entity: "cycle",
+      operation: "update",
+      entityId: id,
+      payload: data,
+      createdAt: new Date().toISOString(),
+      retryCount: 0,
+    });
+  } catch {
+    // IndexedDB no disponible
+  }
 
   return MOCK_CYCLES[idx];
 }
