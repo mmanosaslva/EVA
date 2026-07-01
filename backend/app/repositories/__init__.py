@@ -37,6 +37,15 @@ from app.repositories.insight_repo import (
     get_insights_history,
 )
 
+from app.repositories.ml_repo import (
+    upsert_ml_model,
+    get_ml_model,
+)
+
+from app.repositories.cycle_features_repo import (
+    get_cycles_with_features,
+)
+
 __all__ = [
     "get_cycles_by_user",
     "get_cycle_by_id",
@@ -64,4 +73,7 @@ __all__ = [
     "resolve_client_id",
     "save_insight",
     "get_insights_history",
+    "upsert_ml_model",
+    "get_ml_model",
+    "get_cycles_with_features",
 ]
