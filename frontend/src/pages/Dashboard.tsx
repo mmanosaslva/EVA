@@ -5,6 +5,7 @@ import { computeDashboardData } from "../lib/dashboardUtils";
 import { MetricCard } from "../components/dashboard/MetricCard";
 import { RecentCycles } from "../components/dashboard/RecentCycles";
 import { CycleDurationChart } from "../components/charts/CycleDurationChart";
+import { SymptomFrequencyChart } from "../components/charts/SymptomFrequencyChart";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 
@@ -151,6 +152,11 @@ export default function Dashboard() {
           data={durationChartData}
           average={avgPeriodDuration}
         />
+      </div>
+
+      {/* Symptom Frequency Chart — Issue #26 */}
+      <div className="mb-5">
+        <SymptomFrequencyChart totalCycles={totalCycles} />
       </div>
 
       {/* Recent Cycles */}
