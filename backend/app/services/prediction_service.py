@@ -1,6 +1,6 @@
 import math
 from datetime import date, timedelta
-from typing import Optional
+
 
 from app.repositories import cycle_repo
 from app.utils.cycle_utils import calculate_current_phase
