@@ -6,8 +6,6 @@ import { MetricCard } from "../components/dashboard/MetricCard";
 import { RecentCycles } from "../components/dashboard/RecentCycles";
 import { CycleDurationChart } from "../components/charts/CycleDurationChart";
 import { SymptomFrequencyChart } from "../components/charts/SymptomFrequencyChart";
-import { PredictionWidget } from "../components/dashboard/PredictionWidget";
-import { CycleEducation } from "../components/dashboard/CycleEducation";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 
@@ -80,14 +78,17 @@ export default function Dashboard() {
     currentPhaseDescription,
     predictedNextDate,
     daysUntilNext,
-    confidenceEarly,
-    confidenceLate,
-    cycleVariability,
-    fertileStart,
-    fertileEnd,
     pastCycles,
     durationChartData,
   } = dashboardData;
+
+  const formattedPredicted = new Date(predictedNextDate).toLocaleDateString(
+    "es-ES",
+    {
+      day: "numeric",
+      month: "long",
+    },
+  );
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
@@ -101,12 +102,26 @@ export default function Dashboard() {
       </div>
 
       {/* Metric Cards Grid */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-2 gap-3 mb-5">
         <MetricCard
           icon="📊"
           value={`${avgCycleDuration}`}
           label="Duración promedio"
-          subtitle={`${totalCycles} ciclos`}
+          subtitle={`${totalCycles} ciclos registrados`}
+          variant="highlight"
+        />
+
+        <MetricCard
+          icon="📅"
+          value={daysUntilNext === 0 ? "Hoy" : `${daysUntilNext}`}
+          label={
+            daysUntilNext === 0
+              ? "Próximo período"
+              : daysUntilNext === 1
+                ? "Día para tu período"
+                : "Días para tu período"
+          }
+          subtitle={`Estimado: ${formattedPredicted}`}
           variant="highlight"
         />
 
@@ -122,27 +137,12 @@ export default function Dashboard() {
         <MetricCard
           icon="📍"
           value={currentCycle ? `Día ${currentCycleDay}` : "—"}
-          label={`de ${predictedCycleLength}`}
+          label={`de ${predictedCycleLength} días`}
           subtitle={
             currentCycle
               ? `Inició el ${new Date(currentCycle.start_date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}`
               : "Sin ciclo activo"
           }
-        />
-      </div>
-
-      {/* Prediction Widget — Issue #30 */}
-      <div className="mb-5">
-        <PredictionWidget
-          daysUntilNext={daysUntilNext}
-          predictedDate={predictedNextDate}
-          confidenceEarly={confidenceEarly}
-          confidenceLate={confidenceLate}
-          fertileStart={fertileStart}
-          fertileEnd={fertileEnd}
-          source="heuristic"
-          cycleVariability={cycleVariability}
-          hasCycles={cycles.length > 0}
         />
       </div>
 
@@ -162,11 +162,6 @@ export default function Dashboard() {
       {/* Recent Cycles */}
       <div className="mb-5">
         <RecentCycles cycles={pastCycles} />
-      </div>
-
-      {/* Cycle Education — Issue #31 */}
-      <div className="mb-5">
-        <CycleEducation currentPhase={dashboardData.currentPhase} />
       </div>
 
       {/* Quick action */}
