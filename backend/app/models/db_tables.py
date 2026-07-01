@@ -42,7 +42,7 @@ daily_logs_table = Table(
     CheckConstraint("flow_level IN ('none', 'light', 'medium', 'heavy')", name="chk_flow_level"),
     CheckConstraint("temperature IS NULL OR (temperature >= 35.0 AND temperature <= 42.0)", name="chk_temperature"),
     UniqueConstraint("cycle_id", "date", name="uq_log_cycle_date"),
-    Index("idx_daily_logs_cycle", "cycle_id", "date", postgresql_using="btree"),
+    Index("idx_daily_logs_cycle_flow", "cycle_id", "flow_level", postgresql_using="btree"),
 )
 
 symptoms_catalog_table = Table(
@@ -61,7 +61,6 @@ daily_symptoms_table = Table(
     Column("symptom_id", Integer, ForeignKey("symptoms_catalog.id"), primary_key=True),
     Column("intensity", SmallInteger, nullable=False),
     CheckConstraint("intensity BETWEEN 1 AND 5", name="chk_symptom_intensity"),
-    Index("idx_daily_symptoms_log", "log_id"),
     Index("idx_daily_symptoms_symptom", "symptom_id"),
 )
 
