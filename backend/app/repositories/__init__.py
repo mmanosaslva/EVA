@@ -32,6 +32,11 @@ from app.repositories.sync_repo import (
     resolve_client_id,
 )
 
+from app.repositories.insight_repo import (
+    save_insight,
+    get_insights_history,
+)
+
 __all__ = [
     "get_cycles_by_user",
     "get_cycle_by_id",
@@ -57,4 +62,6 @@ __all__ = [
     "find_by_client_id",
     "insert_sync_operation",
     "resolve_client_id",
+    "save_insight",
+    "get_insights_history",
 ]

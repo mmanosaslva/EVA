@@ -45,6 +45,7 @@ narwhals==2.22.1
 joblib==1.5.3
 
 # ── Utilidades ───────────────────────────────────────────────
+httpx==0.28.1
 python-dotenv==1.2.2
 PyYAML==6.0.3
 idna==3.14
