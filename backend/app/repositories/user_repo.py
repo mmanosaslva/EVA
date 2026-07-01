@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.core.db import engine
-from app.models.db_tables import users_table
+from app.models.db_tables import users_table, cycles_table, ml_models_table
 
 
 @dataclass
@@ -13,9 +13,6 @@ class UserCycleInfo:
 
 
 async def get_users_with_new_cycles() -> list[UserCycleInfo]:
-    from sqlalchemy import func
-    from app.models.db_tables import cycles_table, ml_models_table
-
     last_cycle_subq = (
         select(
             cycles_table.c.user_id,
