@@ -1,3 +1,4 @@
+import random
 from datetime import date, timedelta
 from unittest.mock import patch
 
@@ -11,6 +12,25 @@ USER_ID = "550e8400-e29b-41d4-a716-446655440000"
 
 def _make_cycle(start_date: date, end_date: date | None = None) -> dict:
     return {"start_date": start_date, "end_date": end_date}
+
+
+@pytest.fixture
+def synthetic_cycles():
+    """Genera n ciclos sintéticos con duraciones = base ± noise aleatorio.
+
+    Retorna una lista de dicts con start_date/end_date listos para el servicio.
+    """
+    def _generate(n: int, base: int = 28, noise: int = 0) -> list[dict]:
+        random.seed(42)
+        cycles = []
+        current = date(2024, 1, 1)
+        for _ in range(n):
+            duration = base + random.randint(-noise, noise)
+            end = current + timedelta(days=5)
+            cycles.append(_make_cycle(current, end))
+            current += timedelta(days=duration)
+        return cycles
+    return _generate
 
 
 class TestPredictEmpty:
@@ -186,3 +206,26 @@ class TestCycleUtils:
         phase, day = calculate_current_phase(cycle)
         assert phase == "folicular"
         assert day == 11
+
+
+class TestMAE:
+    @pytest.mark.asyncio
+    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
+    async def test_mae_below_3_days(self, mock_get, synthetic_cycles):
+        base = 28
+        noise = 4
+        n = 20
+        cycles = synthetic_cycles(n, base=base, noise=noise)
+
+        errors = []
+        for i in range(1, len(cycles)):
+            known = cycles[:i]
+            actual_start = cycles[i]["start_date"]
+            mock_get.return_value = known
+            result = await predict_next_cycle_heuristic(USER_ID)
+            predicted = result["predicted_start_date"]
+            if predicted is not None:
+                errors.append(abs((predicted - actual_start).days))
+        mae = sum(errors) / len(errors) if errors else 0
+        assert mae < 3.0, f"MAE={mae:.2f} >= 3.0"
+        assert result["prediction_source"] == "heuristic"
