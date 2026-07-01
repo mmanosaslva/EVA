@@ -145,6 +145,13 @@ SQLITE_LOG_COLUMNS = [
     _tm.tables["daily_logs"].c.created_at, _tm.tables["daily_logs"].c.updated_at,
 ]
 
+SQLITE_SYNC_COLUMNS = [
+    _tm.tables["sync_operations"].c.id, _tm.tables["sync_operations"].c.user_id,
+    _tm.tables["sync_operations"].c.client_id, _tm.tables["sync_operations"].c.type,
+    _tm.tables["sync_operations"].c.payload, _tm.tables["sync_operations"].c.status,
+    _tm.tables["sync_operations"].c.server_id, _tm.tables["sync_operations"].c.applied_at,
+]
+
 
 @pytest.fixture(autouse=True)
 async def sqlite_engine(monkeypatch):
@@ -156,11 +163,13 @@ async def sqlite_engine(monkeypatch):
     monkeypatch.setattr("app.repositories.cycle_repo.engine", engine)
     monkeypatch.setattr("app.repositories.daily_log_repo.engine", engine)
     monkeypatch.setattr("app.repositories.symptom_repo.engine", engine)
+    monkeypatch.setattr("app.repositories.sync_repo.engine", engine)
     monkeypatch.setattr("app.repositories.analytics_repo.engine", engine)
     monkeypatch.setattr("app.repositories.analytics_repo.cycles_table", _tm.tables["cycles"])
     monkeypatch.setattr("app.repositories.analytics_repo.daily_logs_table", _tm.tables["daily_logs"])
     monkeypatch.setattr("app.repositories.analytics_repo.daily_symptoms_table", _tm.tables["daily_symptoms"])
     monkeypatch.setattr("app.repositories.analytics_repo.symptoms_catalog_table", _tm.tables["symptoms_catalog"])
+    monkeypatch.setattr("app.repositories.sync_repo.sync_operations_table", _tm.tables["sync_operations"])
 
     monkeypatch.setattr(
         "app.repositories.cycle_repo.cycles_table", _tm.tables["cycles"]
@@ -173,6 +182,9 @@ async def sqlite_engine(monkeypatch):
     )
     monkeypatch.setattr(
         "app.repositories.daily_log_repo.LOG_COLUMNS", SQLITE_LOG_COLUMNS
+    )
+    monkeypatch.setattr(
+        "app.repositories.sync_repo.SYNC_COLUMNS", SQLITE_SYNC_COLUMNS
     )
     yield engine
     await engine.dispose()

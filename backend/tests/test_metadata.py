@@ -138,5 +138,6 @@ sync_operations_table = Table(
     Column("type", String(30), nullable=False),
     Column("payload", Text, nullable=False),
     Column("status", String(20), nullable=False, server_default=text("1")),
+    Column("server_id", String(36), nullable=True),
     Column("applied_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
