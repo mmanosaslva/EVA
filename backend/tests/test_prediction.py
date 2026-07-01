@@ -130,6 +130,52 @@ class TestPredictMultipleCycles:
         assert result["prediction_source"] == "heuristic"
 
 
+class TestExactCriterias:
+    @pytest.mark.asyncio
+    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
+    async def test_irregular_cycles_24_32_28_30(self, mock_get):
+        start_dates = [
+            date(2025, 1, 1),
+            date(2025, 1, 25),
+            date(2025, 2, 26),
+            date(2025, 3, 26),
+            date(2025, 4, 25),
+        ]
+        cycles = [_make_cycle(s, s + timedelta(days=4)) for s in start_dates]
+        mock_get.return_value = cycles
+        result = await predict_next_cycle_heuristic(USER_ID)
+        assert result["has_sufficient_data"] is True
+        assert result["avg_cycle_length"] == 28.5
+        assert result["predicted_start_date"] == date(2025, 5, 23)
+        assert result["cycle_variability"] > 0
+        assert result["confidence_range"]["early"] is not None
+        assert result["confidence_range"]["late"] is not None
+        assert result["confidence_range"]["early"] < result["predicted_start_date"] < result["confidence_range"]["late"]
+        assert result["prediction_source"] == "heuristic"
+
+    @pytest.mark.asyncio
+    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
+    async def test_sop_high_variability_19_45_23_38(self, mock_get):
+        start_dates = [
+            date(2025, 1, 1),
+            date(2025, 1, 20),
+            date(2025, 3, 6),
+            date(2025, 3, 29),
+            date(2025, 5, 6),
+        ]
+        cycles = [_make_cycle(s, s + timedelta(days=4)) for s in start_dates]
+        mock_get.return_value = cycles
+        result = await predict_next_cycle_heuristic(USER_ID)
+        assert result["has_sufficient_data"] is True
+        assert result["cycle_variability"] > 5.0
+        assert result["avg_cycle_length"] == 31.2
+        assert result["predicted_start_date"] == date(2025, 6, 6)
+        assert result["confidence_range"]["early"] is not None
+        assert result["confidence_range"]["late"] is not None
+        assert result["confidence_range"]["early"] < result["predicted_start_date"] < result["confidence_range"]["late"]
+        assert result["prediction_source"] == "heuristic"
+
+
 class TestFertileWindow:
     @pytest.mark.asyncio
     @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
