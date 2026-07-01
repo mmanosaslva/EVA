@@ -4,7 +4,7 @@ from typing import Optional
 import httpx
 
 from app.core.config import settings
-from app.repositories import cycle_repo
+from app.repositories import analytics_repo, cycle_repo, daily_log_repo, symptom_repo
 from app.utils.cycle_utils import calculate_current_phase
 
 OLLAMA_BASE_URL = settings.OLLAMA_BASE_URL
@@ -84,7 +84,7 @@ async def _call_groq(prompt: str) -> Optional[str]:
         return None
 
 
-async def build_cycle_context(user_id: str, context_cycles: int = 3) -> dict:
+async def build_cycle_context(user_id: str, context_cycles: int = 6) -> dict:
     rows = await cycle_repo.get_cycles_by_user(user_id, limit=context_cycles, offset=0)
 
     if not rows:
@@ -93,7 +93,7 @@ async def build_cycle_context(user_id: str, context_cycles: int = 3) -> dict:
             "dia_del_ciclo": None,
             "duracion_promedio": 28,
             "sintomas_frecuentes": [],
-            "intensidad_actual": "moderada",
+            "intensidad_actual": None,
             "dias_hasta_siguiente": None,
         }
 
@@ -120,12 +120,33 @@ async def build_cycle_context(user_id: str, context_cycles: int = 3) -> dict:
     predicted_next = last_cycle["start_date"] + timedelta(days=int(round(avg_duration)))
     days_until_next = (predicted_next - date.today()).days if predicted_next > date.today() else 0
 
+    # ── Síntomas frecuentes desde la BD ───────────────────────────
+    cycle_ids = [c["id"] for c in cycles]
+    symptom_rows = await analytics_repo.get_symptom_frequencies(cycle_ids, limit=5)
+
+    sintomas_frecuentes = []
+    intensidad_actual = None
+    if symptom_rows:
+        sintomas_frecuentes = [s["name"] for s in symptom_rows]
+        intensidad_actual = str(symptom_rows[0]["avg_intensity"])
+
+    # ── Intensidad del día de hoy desde daily_logs ────────────────
+    today = date.today()
+    log = await daily_log_repo.get_daily_log_by_date(last_cycle["id"], today)
+    if log:
+        log_id = str(log._mapping["id"])
+        today_symptoms = await symptom_repo.get_symptoms_by_log(log_id)
+        if today_symptoms:
+            intensities = [s["intensity"] for s in today_symptoms]
+            avg_today = round(sum(intensities) / len(intensities), 1)
+            intensidad_actual = str(avg_today)
+
     return {
         "fase_actual": phase,
         "dia_del_ciclo": phase_day,
         "duracion_promedio": avg_duration,
-        "sintomas_frecuentes": [],
-        "intensidad_actual": "moderada",
+        "sintomas_frecuentes": sintomas_frecuentes,
+        "intensidad_actual": intensidad_actual or "moderada",
         "dias_hasta_siguiente": days_until_next,
     }
 
