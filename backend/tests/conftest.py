@@ -2,10 +2,10 @@ from datetime import date
 from unittest.mock import AsyncMock
 
 import pytest
+from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.core.config import settings
-from app.models.db_tables import metadata, symptoms_catalog_table
+from tests.test_metadata import test_metadata as _tm
 
 TEST_USER_ID = "550e8400-e29b-41d4-a716-446655440000"
 TEST_CYCLE_ID = "550e8400-e29b-41d4-a716-446655440001"
@@ -130,46 +130,62 @@ def mock_engine(monkeypatch):
     return engine
 
 
-# ── Database fixtures (integration tests, requires DB) ──────
+# ── SQLite fixtures (integration tests, no PostgreSQL needed) ─
 
-def _get_test_db_url():
-    url = settings.TEST_DATABASE_URL or settings.DATABASE_URL
-    if url and url.startswith("postgresql://"):
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    return url
+SQLITE_CYCLE_COLUMNS = [
+    _tm.tables["cycles"].c.id, _tm.tables["cycles"].c.user_id,
+    _tm.tables["cycles"].c.start_date, _tm.tables["cycles"].c.end_date,
+    _tm.tables["cycles"].c.created_at, _tm.tables["cycles"].c.updated_at,
+]
+
+SQLITE_LOG_COLUMNS = [
+    _tm.tables["daily_logs"].c.id, _tm.tables["daily_logs"].c.cycle_id,
+    _tm.tables["daily_logs"].c.date, _tm.tables["daily_logs"].c.flow_level,
+    _tm.tables["daily_logs"].c.temperature, _tm.tables["daily_logs"].c.notes,
+    _tm.tables["daily_logs"].c.created_at, _tm.tables["daily_logs"].c.updated_at,
+]
 
 
-@pytest.fixture(scope="session")
-def test_db_url():
-    url = _get_test_db_url()
-    if not url:
-        pytest.skip("No TEST_DATABASE_URL or DATABASE_URL configured")
-    return url
-
-
-@pytest.fixture
-async def test_engine(test_db_url):
-    engine = create_async_engine(test_db_url, pool_pre_ping=True)
+@pytest.fixture(autouse=True)
+async def sqlite_engine(monkeypatch):
+    engine = create_async_engine("sqlite+aiosqlite://", echo=False)
     async with engine.begin() as conn:
-        await conn.run_sync(metadata.create_all)
+        await conn.run_sync(_tm.create_all)
+
+    monkeypatch.setattr("app.core.db.engine", engine)
+    monkeypatch.setattr("app.repositories.cycle_repo.engine", engine)
+    monkeypatch.setattr("app.repositories.daily_log_repo.engine", engine)
+    monkeypatch.setattr("app.repositories.symptom_repo.engine", engine)
+
+    monkeypatch.setattr(
+        "app.repositories.cycle_repo.cycles_table", _tm.tables["cycles"]
+    )
+    monkeypatch.setattr(
+        "app.repositories.daily_log_repo.daily_logs_table", _tm.tables["daily_logs"]
+    )
+    monkeypatch.setattr(
+        "app.repositories.cycle_repo.CYCLE_COLUMNS", SQLITE_CYCLE_COLUMNS
+    )
+    monkeypatch.setattr(
+        "app.repositories.daily_log_repo.LOG_COLUMNS", SQLITE_LOG_COLUMNS
+    )
     yield engine
-    async with engine.begin() as conn:
-        await conn.run_sync(metadata.drop_all)
     await engine.dispose()
 
 
 @pytest.fixture
-async def test_db(test_engine):
-    async with test_engine.connect() as conn:
+async def sqlite_db(sqlite_engine):
+    async with sqlite_engine.connect() as conn:
         yield conn
 
 
 @pytest.fixture
-async def seeded_db(test_db):
-    from sqlalchemy import insert
-    await test_db.execute(insert(symptoms_catalog_table).values(SEED_SYMPTOMS))
-    await test_db.commit()
-    yield test_db
+async def seeded_sqlite_db(sqlite_db):
+    await sqlite_db.execute(
+        insert(_tm.tables["symptoms_catalog"]).values(SEED_SYMPTOMS)
+    )
+    await sqlite_db.commit()
+    yield sqlite_db
 
 
 @pytest.fixture

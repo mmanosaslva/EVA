@@ -81,3 +81,62 @@ daily_symptoms_table = Table(
     Index("idx_daily_symptoms_log", "log_id"),
     Index("idx_daily_symptoms_symptom", "symptom_id"),
 )
+
+users_table = Table(
+    "users", test_metadata,
+    Column("id", String(36), primary_key=True,
+           server_default=text(
+               "(lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-' || "
+               "hex(randomblob(2)) || '-' || hex(randomblob(2)) || '-' || hex(randomblob(6))))"
+           )),
+    Column("email", String(255), unique=True, nullable=False),
+    Column("birth_date", Date),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)
+
+ml_models_table = Table(
+    "ml_models", test_metadata,
+    Column("id", String(36), primary_key=True,
+           server_default=text(
+               "(lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-' || "
+               "hex(randomblob(2)) || '-' || hex(randomblob(2)) || '-' || hex(randomblob(6))))"
+           )),
+    Column("user_id", String(36), nullable=False),
+    Column("model_path", Text, nullable=False),
+    Column("mae", Numeric(5, 3)),
+    Column("cycles_used", Integer),
+    Column("trained_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Column("is_active", Boolean, nullable=False, server_default=text("1")),
+)
+
+llm_insights_table = Table(
+    "llm_insights", test_metadata,
+    Column("id", String(36), primary_key=True,
+           server_default=text(
+               "(lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-' || "
+               "hex(randomblob(2)) || '-' || hex(randomblob(2)) || '-' || hex(randomblob(6))))"
+           )),
+    Column("user_id", String(36), nullable=False),
+    Column("question", Text, nullable=False),
+    Column("insight", Text, nullable=False),
+    Column("phase", String(20)),
+    Column("source", String(50), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+    Index("idx_llm_insights_user_date", "user_id", "created_at"),
+)
+
+sync_operations_table = Table(
+    "sync_operations", test_metadata,
+    Column("id", String(36), primary_key=True,
+           server_default=text(
+               "(lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-' || "
+               "hex(randomblob(2)) || '-' || hex(randomblob(2)) || '-' || hex(randomblob(6))))"
+           )),
+    Column("user_id", String(36), nullable=False),
+    Column("client_id", String(100), unique=True, nullable=False),
+    Column("type", String(30), nullable=False),
+    Column("payload", Text, nullable=False),
+    Column("status", String(20), nullable=False, server_default=text("1")),
+    Column("applied_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
+)

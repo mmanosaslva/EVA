@@ -1,19 +1,5 @@
 """
 Tests de integración para cycle_service contra SQLite in-memory.
-
-Usa test_metadata.py (String(36) en vez de UUID) para crear tablas
-compatibles con SQLite y parcha app.core.db.engine + los módulos de
-repositorios que importan engine a nivel de módulo.
-
-Esto permite que el servicio y los repositorios reales ejecuten
-consultas SQL contra una base de datos real (sin mocks), sin
-depender de PostgreSQL.
-
-Motivación de la separación:
-  - test_cycle_service.py  → usa @patch en los repos (unit tests)
-  - test_cycle_service_integration.py  → usa SQLite real (integration tests)
-Ambos archivos cubren los mismos 18 casos; conviene mantenerlos
-sincronizados al agregar nuevas funciones a cycle_service.
 """
 
 from datetime import date
@@ -21,7 +7,6 @@ from datetime import date
 import pytest
 from fastapi import HTTPException
 from sqlalchemy import insert
-from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.repositories import cycle_repo
 from app.services.cycle_service import (
@@ -32,51 +17,26 @@ from app.services.cycle_service import (
     delete_cycle,
 )
 from tests.conftest import TEST_USER_ID, TEST_CYCLE_ID
-from tests.test_metadata import test_metadata as _tm
 
 TEST_USER_2_ID = "550e8400-e29b-41d4-a716-446655449999"
 TEST_LOG_ID = "550e8400-e29b-41d4-a716-446655440002"
 
 
-@pytest.fixture(autouse=True)
-async def sqlite_engine(monkeypatch):
-    engine = create_async_engine("sqlite+aiosqlite://", echo=False)
-    async with engine.begin() as conn:
-        await conn.run_sync(_tm.create_all)
-    _cycles = _tm.tables["cycles"]
-    _logs = _tm.tables["daily_logs"]
-    monkeypatch.setattr("app.core.db.engine", engine)
-    monkeypatch.setattr("app.repositories.cycle_repo.engine", engine)
-    monkeypatch.setattr("app.repositories.daily_log_repo.engine", engine)
-    monkeypatch.setattr("app.repositories.symptom_repo.engine", engine)
-    monkeypatch.setattr("app.repositories.cycle_repo.cycles_table", _cycles)
-    monkeypatch.setattr("app.repositories.daily_log_repo.daily_logs_table", _logs)
-    monkeypatch.setattr("app.repositories.cycle_repo.CYCLE_COLUMNS", [
-        _cycles.c.id, _cycles.c.user_id, _cycles.c.start_date,
-        _cycles.c.end_date, _cycles.c.created_at, _cycles.c.updated_at,
-    ])
-    monkeypatch.setattr("app.repositories.daily_log_repo.LOG_COLUMNS", [
-        _logs.c.id, _logs.c.cycle_id, _logs.c.date,
-        _logs.c.flow_level, _logs.c.temperature, _logs.c.notes,
-        _logs.c.created_at, _logs.c.updated_at,
-    ])
-    yield
-    await engine.dispose()
+@pytest.fixture
+def _cycles():
+    from tests.test_metadata import test_metadata as _tm
+    return _tm.tables["cycles"]
 
 
 @pytest.fixture
-def patched_db():
-    from app.core.db import engine
-    return engine
-
-
-_cycles = _tm.tables["cycles"]
-_daily_logs = _tm.tables["daily_logs"]
+def _daily_logs():
+    from tests.test_metadata import test_metadata as _tm
+    return _tm.tables["daily_logs"]
 
 
 @pytest.fixture
-async def existing_cycle(sqlite_engine, patched_db):
-    async with patched_db.connect() as conn:
+async def existing_cycle(sqlite_engine, _cycles):
+    async with sqlite_engine.connect() as conn:
         await conn.execute(
             insert(_cycles).values(
                 id=TEST_CYCLE_ID,
@@ -89,8 +49,8 @@ async def existing_cycle(sqlite_engine, patched_db):
 
 
 @pytest.fixture
-async def existing_daily_log(sqlite_engine, existing_cycle, patched_db):
-    async with patched_db.connect() as conn:
+async def existing_daily_log(sqlite_engine, existing_cycle, _daily_logs):
+    async with sqlite_engine.connect() as conn:
         await conn.execute(
             insert(_daily_logs).values(
                 id=TEST_LOG_ID,
@@ -132,8 +92,8 @@ class TestCreateCycle:
 
 
 class TestGetCyclesByUser:
-    async def test_returns_only_user_cycles(self, sqlite_engine, patched_db):
-        async with patched_db.connect() as conn:
+    async def test_returns_only_user_cycles(self, sqlite_engine, _cycles):
+        async with sqlite_engine.connect() as conn:
             dates = [date(2025, 6, 1), date(2025, 6, 2), date(2025, 6, 1)]
             for uid, d in zip([TEST_USER_ID, TEST_USER_ID, TEST_USER_2_ID], dates):
                 await conn.execute(
@@ -150,8 +110,8 @@ class TestGetCyclesByUser:
         assert total == 0
         assert cycles == []
 
-    async def test_pagination(self, sqlite_engine, patched_db):
-        async with patched_db.connect() as conn:
+    async def test_pagination(self, sqlite_engine, _cycles):
+        async with sqlite_engine.connect() as conn:
             for i in range(5):
                 await conn.execute(
                     insert(_cycles).values(
@@ -216,8 +176,8 @@ class TestUpdateCycle:
             )
         assert exc.value.status_code == 404
 
-    async def test_duplicate_start_date(self, sqlite_engine, patched_db):
-        async with patched_db.connect() as conn:
+    async def test_duplicate_start_date(self, sqlite_engine, _cycles):
+        async with sqlite_engine.connect() as conn:
             await conn.execute(
                 insert(_cycles).values(
                     id=TEST_CYCLE_ID,
