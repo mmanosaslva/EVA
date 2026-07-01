@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.services.prediction_service import predict_next_cycle_heuristic
+from app.services.prediction_service import predict_next_cycle_heuristic, predict_next_cycle
 from app.utils.cycle_utils import calculate_current_phase
 
 USER_ID = "550e8400-e29b-41d4-a716-446655440000"
@@ -275,3 +275,159 @@ class TestMAE:
         mae = sum(errors) / len(errors) if errors else 0
         assert mae < 3.0, f"MAE={mae:.2f} >= 3.0"
         assert result["prediction_source"] == "heuristic"
+
+
+class TestPredictNextCycle:
+    @pytest.mark.asyncio
+    @patch("app.services.prediction_service.get_ml_model")
+    @patch("app.services.prediction_service.ml_predict")
+    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
+    async def test_prophet_active_returns_prophet_source(self, mock_cycles, mock_prophet, mock_ml):
+        cycles = [
+            _make_cycle(date(2025, 5, 1), date(2025, 5, 5)),
+            _make_cycle(date(2025, 5, 29), date(2025, 6, 2)),
+        ]
+        mock_cycles.return_value = cycles
+        from tests.conftest import MockRow
+        mock_ml.return_value = MockRow({
+            "id": "ml-id",
+            "user_id": USER_ID,
+            "model_path": "/tmp/model.pkl",
+            "mae": 1.2,
+            "cycles_used": 7,
+            "trained_at": None,
+            "is_active": True,
+        })
+        mock_prophet.return_value = {
+            "predicted_start_date": date(2025, 6, 26),
+            "confidence_range": {
+                "early": date(2025, 6, 22),
+                "late": date(2025, 6, 30),
+            },
+            "predicted_duration_days": 28.0,
+            "prediction_source": "prophet",
+        }
+
+        result = await predict_next_cycle(USER_ID)
+
+        assert result["prediction_source"] == "prophet"
+        assert result["predicted_start_date"] == date(2025, 6, 26)
+        assert result["model_mae_days"] == 1.2
+        assert result["cycles_used_for_training"] == 7
+        assert result["confidence_range"]["early"] == date(2025, 6, 22)
+        assert result["confidence_range"]["late"] == date(2025, 6, 30)
+        assert result["fertile_window"]["start"] is not None
+        assert result["fertile_window"]["end"] is not None
+        assert result["days_until_next"] is not None
+        assert result["current_phase"] is not None
+        assert result["current_phase_day"] is not None
+
+    @pytest.mark.asyncio
+    @patch("app.services.prediction_service.get_ml_model")
+    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
+    async def test_no_ml_model_falls_back_to_heuristic(self, mock_cycles, mock_ml):
+        cycles = [
+            _make_cycle(date(2025, 5, 1), date(2025, 5, 5)),
+            _make_cycle(date(2025, 5, 29), date(2025, 6, 2)),
+        ]
+        mock_cycles.return_value = cycles
+        mock_ml.return_value = None
+
+        result = await predict_next_cycle(USER_ID)
+
+        assert result["prediction_source"] == "heuristic"
+        assert result["predicted_start_date"] is not None
+        assert result["model_mae_days"] is None
+        assert result["cycles_used_for_training"] is None
+
+    @pytest.mark.asyncio
+    @patch("app.services.prediction_service.get_ml_model")
+    @patch("app.services.prediction_service.ml_predict")
+    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
+    async def test_prophet_returns_none_falls_back(self, mock_cycles, mock_prophet, mock_ml):
+        cycles = [
+            _make_cycle(date(2025, 5, 1), date(2025, 5, 5)),
+            _make_cycle(date(2025, 5, 29), date(2025, 6, 2)),
+        ]
+        mock_cycles.return_value = cycles
+        from tests.conftest import MockRow
+        mock_ml.return_value = MockRow({
+            "id": "ml-id",
+            "user_id": USER_ID,
+            "model_path": "/tmp/model.pkl",
+            "mae": 1.2,
+            "cycles_used": 7,
+            "trained_at": None,
+            "is_active": True,
+        })
+        mock_prophet.return_value = None
+
+        result = await predict_next_cycle(USER_ID)
+
+        assert result["prediction_source"] == "heuristic"
+        assert result["model_mae_days"] is None
+        assert result["cycles_used_for_training"] is None
+
+    @pytest.mark.asyncio
+    @patch("app.services.prediction_service.get_ml_model")
+    @patch("app.services.prediction_service.ml_predict")
+    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
+    async def test_prophet_exception_falls_back(self, mock_cycles, mock_prophet, mock_ml):
+        cycles = [
+            _make_cycle(date(2025, 5, 1), date(2025, 5, 5)),
+            _make_cycle(date(2025, 5, 29), date(2025, 6, 2)),
+        ]
+        mock_cycles.return_value = cycles
+        from tests.conftest import MockRow
+        mock_ml.return_value = MockRow({
+            "id": "ml-id",
+            "user_id": USER_ID,
+            "model_path": "/tmp/model.pkl",
+            "mae": 1.2,
+            "cycles_used": 7,
+            "trained_at": None,
+            "is_active": True,
+        })
+        mock_prophet.side_effect = RuntimeError("Prophet crash")
+
+        result = await predict_next_cycle(USER_ID)
+
+        assert result["prediction_source"] == "heuristic"
+
+    @pytest.mark.asyncio
+    @patch("app.services.prediction_service.get_ml_model")
+    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
+    async def test_zero_cycles_returns_insufficient_data(self, mock_cycles, mock_ml):
+        mock_cycles.return_value = []
+
+        result = await predict_next_cycle(USER_ID)
+
+        assert result["has_sufficient_data"] is False
+        assert result["predicted_start_date"] is None
+        assert result["prediction_source"] == "heuristic"
+
+    @pytest.mark.asyncio
+    @patch("app.services.prediction_service.get_ml_model")
+    @patch("app.services.prediction_service.ml_predict")
+    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
+    async def test_inactive_model_falls_back(self, mock_cycles, mock_prophet, mock_ml):
+        cycles = [
+            _make_cycle(date(2025, 5, 1), date(2025, 5, 5)),
+            _make_cycle(date(2025, 5, 29), date(2025, 6, 2)),
+        ]
+        mock_cycles.return_value = cycles
+        from tests.conftest import MockRow
+        mock_ml.return_value = MockRow({
+            "id": "ml-id",
+            "user_id": USER_ID,
+            "model_path": "/tmp/model.pkl",
+            "mae": 1.2,
+            "cycles_used": 7,
+            "trained_at": None,
+            "is_active": False,
+        })
+
+        result = await predict_next_cycle(USER_ID)
+
+        assert result["prediction_source"] == "heuristic"
+        mock_prophet.assert_not_called()
