@@ -1,8 +1,7 @@
-<<<<<<< HEAD
 /* ───── Ciclos ───── */
 
 export interface CycleCreate {
-  start_date: string;  // "YYYY-MM-DD"
+  start_date: string;
   end_date?: string;
 }
 
@@ -41,7 +40,7 @@ export interface SymptomResponse {
 
 export interface SymptomEntry {
   symptom_id: number;
-  intensity: number;  // 1-5
+  intensity: number;
 }
 
 export interface SymptomLogEntry extends SymptomEntry {
@@ -94,7 +93,10 @@ export interface AuthSession {
     id: string;
     email: string | undefined;
   };
-=======
+}
+
+/* ───── Phase / Calendar (Daniel S3) ───── */
+
 export type CyclePhase = "menstruacion" | "folicular" | "ovulacion" | "lutea";
 
 export interface Cycle {
@@ -143,5 +145,4 @@ export interface CalendarDay {
   phase: CyclePhase | null;
   cycleId: string | null;
   dailyLog: DailyLog | null;
->>>>>>> origin/DanielS3
 }
