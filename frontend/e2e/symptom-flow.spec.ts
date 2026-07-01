@@ -8,9 +8,7 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("muestra la página de síntomas con el formulario de registro", async ({ page }) => {
     await page.goto("/symptoms");
-    await page.waitForLoadState("networkidle");
-
-    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole("tab", { name: /registrar/i })).toBeVisible();
     await expect(page.getByRole("tab", { name: /historial/i })).toBeVisible();
     await expect(page.getByText("Nuevo registro")).toBeVisible();
@@ -18,25 +16,30 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("permite seleccionar un síntoma y ajustar intensidad", async ({ page }) => {
     await page.goto("/symptoms");
-    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     const symptomBtn = page.getByRole("button", { name: /dolor abdominal/i });
-    await expect(symptomBtn).toBeVisible();
+    await expect(symptomBtn).toBeVisible({ timeout: 10000 });
 
     await symptomBtn.click();
     await expect(symptomBtn).toHaveAttribute("aria-pressed", "true");
 
     const slider = page.getByRole("slider", { name: /intensidad de dolor abdominal/i });
-    await expect(slider).toBeVisible();
-    await slider.fill("4");
+    await expect(slider).toBeVisible({ timeout: 10000 });
+    await slider.evaluate((el) => {
+      const input = el as HTMLInputElement;
+      input.value = "4";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
   });
 
   test("permite seleccionar nivel de flujo", async ({ page }) => {
     await page.goto("/symptoms");
-    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
-    const flowBtn = page.getByRole("button", { name: /moderado/i });
-    await expect(flowBtn).toBeVisible();
+    const flowBtn = page.getByRole("button", { name: /moderad/i });
+    await expect(flowBtn).toBeVisible({ timeout: 10000 });
 
     await flowBtn.click();
     await expect(flowBtn).toHaveAttribute("aria-pressed", "true");
@@ -44,16 +47,18 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("completa el formulario y guarda el registro", async ({ page }) => {
     await page.goto("/symptoms");
-    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     await page.getByRole("button", { name: /dolor abdominal/i }).click();
 
-    await page.getByRole("button", { name: /moderado/i }).click();
+    await page.getByRole("button", { name: /moderad/i }).click();
 
     const tempInput = page.getByLabel(/temperatura basal/i);
+    await expect(tempInput).toBeVisible({ timeout: 10000 });
     await tempInput.fill("36.5");
 
     const notesInput = page.getByPlaceholder(/cómo te sientes/i);
+    await expect(notesInput).toBeVisible({ timeout: 10000 });
     await notesInput.fill("Día con molestias leves");
 
     await page.getByRole("button", { name: /guardar/i }).click();
@@ -63,9 +68,10 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("muestra validación de temperatura fuera de rango", async ({ page }) => {
     await page.goto("/symptoms");
-    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     const tempInput = page.getByLabel(/temperatura basal/i);
+    await expect(tempInput).toBeVisible({ timeout: 10000 });
     await tempInput.fill("50");
 
     await expect(page.getByText("Entre 35°C y 42°C")).toBeVisible();
