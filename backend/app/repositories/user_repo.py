@@ -38,3 +38,11 @@ async def get_users_with_new_cycles() -> list[UserCycleInfo]:
     async with engine.connect() as conn:
         result = await conn.execute(query)
         return [UserCycleInfo(id=str(row.id), email=row.email) for row in result.fetchall()]
+
+
+async def get_all_active_users() -> list[UserCycleInfo]:
+    query = select(users_table.c.id, users_table.c.email).order_by(users_table.c.id)
+
+    async with engine.connect() as conn:
+        result = await conn.execute(query)
+        return [UserCycleInfo(id=str(row.id), email=row.email) for row in result.fetchall()]

@@ -45,6 +45,7 @@ from app.repositories.ml_repo import (
 
 from app.repositories.user_repo import (
     get_users_with_new_cycles,
+    get_all_active_users,
 )
 
 __all__ = [
@@ -78,4 +79,5 @@ __all__ = [
     "get_ml_model",
     "get_cycles_with_features",
     "get_users_with_new_cycles",
+    "get_all_active_users",
 ]
