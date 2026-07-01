@@ -16,6 +16,8 @@ node_modules
 dist
 dist-ssr
 coverage
+e2e-report
+test-results
 *.local
 
 # Editor directories and files
