@@ -11,7 +11,6 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("muestra la página de síntomas con el formulario de registro", async ({ page }) => {
     await page.goto(SYMPTOMS_URL);
-    await page.goto("/symptoms");
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole("tab", { name: /registrar/i })).toBeVisible();
     await expect(page.getByRole("tab", { name: /historial/i })).toBeVisible();
@@ -20,7 +19,6 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("permite seleccionar un síntoma y ajustar intensidad", async ({ page }) => {
     await page.goto(SYMPTOMS_URL);
-    await page.goto("/symptoms");
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     const symptomBtn = page.getByRole("button", { name: /dolor abdominal/i });
@@ -50,19 +48,6 @@ test.describe("Flujo de registro de síntomas", () => {
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     const flowBtn = page.getByRole("button", { name: /medio/i });
-    await slider.evaluate((el) => {
-      const input = el as HTMLInputElement;
-      input.value = "4";
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-  });
-
-  test("permite seleccionar nivel de flujo", async ({ page }) => {
-    await page.goto("/symptoms");
-    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
-
-    const flowBtn = page.getByRole("button", { name: /moderad/i });
     await expect(flowBtn).toBeVisible({ timeout: 10000 });
 
     await flowBtn.click();
@@ -71,13 +56,11 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("completa el formulario y guarda el registro", async ({ page }) => {
     await page.goto(SYMPTOMS_URL);
-    await page.goto("/symptoms");
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     await page.getByRole("button", { name: /dolor abdominal/i }).click();
 
     await page.getByRole("button", { name: /medio/i }).click();
-    await page.getByRole("button", { name: /moderad/i }).click();
 
     const tempInput = page.getByLabel(/temperatura basal/i);
     await expect(tempInput).toBeVisible({ timeout: 10000 });
@@ -94,7 +77,6 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("muestra validación de temperatura fuera de rango", async ({ page }) => {
     await page.goto(SYMPTOMS_URL);
-    await page.goto("/symptoms");
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     const tempInput = page.getByLabel(/temperatura basal/i);
