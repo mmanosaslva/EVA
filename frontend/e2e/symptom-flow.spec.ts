@@ -1,12 +1,16 @@
 import { test, expect } from "@playwright/test";
 import { mockSupabaseAuth } from "./helpers/auth";
 
+const SYMPTOMS_URL =
+  "/symptoms?date=2026-06-28&cycleId=c3-5e7a-4b1d-9f3c-8a2e1d4b6f00";
+
 test.describe("Flujo de registro de síntomas", () => {
   test.beforeEach(async ({ page }) => {
     await mockSupabaseAuth(page);
   });
 
   test("muestra la página de síntomas con el formulario de registro", async ({ page }) => {
+    await page.goto(SYMPTOMS_URL);
     await page.goto("/symptoms");
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole("tab", { name: /registrar/i })).toBeVisible();
@@ -15,6 +19,7 @@ test.describe("Flujo de registro de síntomas", () => {
   });
 
   test("permite seleccionar un síntoma y ajustar intensidad", async ({ page }) => {
+    await page.goto(SYMPTOMS_URL);
     await page.goto("/symptoms");
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
@@ -26,6 +31,25 @@ test.describe("Flujo de registro de síntomas", () => {
 
     const slider = page.getByRole("slider", { name: /intensidad de dolor abdominal/i });
     await expect(slider).toBeVisible({ timeout: 10000 });
+    await slider.evaluate(
+      (el: HTMLInputElement, value: string) => {
+        const nativeSetter = Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          "value",
+        )!.set!;
+        nativeSetter.call(el, value);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+      },
+      "4",
+    );
+  });
+
+  test("permite seleccionar nivel de flujo", async ({ page }) => {
+    await page.goto(SYMPTOMS_URL);
+    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
+
+    const flowBtn = page.getByRole("button", { name: /medio/i });
     await slider.evaluate((el) => {
       const input = el as HTMLInputElement;
       input.value = "4";
@@ -46,11 +70,13 @@ test.describe("Flujo de registro de síntomas", () => {
   });
 
   test("completa el formulario y guarda el registro", async ({ page }) => {
+    await page.goto(SYMPTOMS_URL);
     await page.goto("/symptoms");
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
     await page.getByRole("button", { name: /dolor abdominal/i }).click();
 
+    await page.getByRole("button", { name: /medio/i }).click();
     await page.getByRole("button", { name: /moderad/i }).click();
 
     const tempInput = page.getByLabel(/temperatura basal/i);
@@ -67,6 +93,7 @@ test.describe("Flujo de registro de síntomas", () => {
   });
 
   test("muestra validación de temperatura fuera de rango", async ({ page }) => {
+    await page.goto(SYMPTOMS_URL);
     await page.goto("/symptoms");
     await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
 
