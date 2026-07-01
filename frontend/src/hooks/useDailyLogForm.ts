@@ -1,175 +1,195 @@
-import { useState, useCallback } from "react";
-import type { DailyLog, DailySymptom } from "../lib/types";
-import { createDailyLog, updateDailyLog } from "../services/dailyLogService";
+import { useState, useEffect, useCallback } from "react";
+import type { SymptomCatalog, DailyLog } from "../lib/types";
+import {
+  getSymptomsCatalog,
+  getDailyLogByDate,
+  createDailyLog,
+  updateDailyLog,
+} from "../services/symptomService";
 
-interface UseDailyLogFormOptions {
-  cycleId: string;
-  date: string;
-  initialData?: DailyLog | null;
-  onSuccess: () => void;
-}
+export type FlowLevel = "none" | "light" | "medium" | "heavy";
 
-interface SelectedSymptom {
-  symptom_id: number;
-  name: string;
-  category: string;
-  intensity: number;
-}
-
-interface UseDailyLogFormReturn {
-  selectedSymptoms: Map<number, SelectedSymptom>;
-  flowLevel: string;
+export interface UseDailyLogFormReturn {
+  symptomsCatalog: SymptomCatalog[];
+  loading: boolean;
+  error: string | null;
+  selectedSymptoms: Record<number, number>;
+  flowLevel: FlowLevel;
   temperature: string;
   notes: string;
-  error: string | null;
-  submitting: boolean;
-  successMessage: string | null;
-  toggleSymptom: (symptom: { id: number; name: string; category: string }) => void;
+  saving: boolean;
+  success: boolean;
+  existingLog: DailyLog | null;
+  toggleSymptom: (symptomId: number) => void;
   setIntensity: (symptomId: number, intensity: number) => void;
-  setFlowLevel: (v: string) => void;
-  setTemperature: (v: string) => void;
-  setNotes: (v: string) => void;
-  handleSubmit: () => Promise<void>;
-  dismissSuccess: () => void;
+  setFlowLevel: (level: FlowLevel) => void;
+  setTemperature: (value: string) => void;
+  setNotes: (value: string) => void;
+  submit: () => Promise<void>;
 }
 
-function buildInitialSymptoms(data: DailyLog | null | undefined): Map<number, SelectedSymptom> {
-  if (!data) return new Map();
-  const map = new Map<number, SelectedSymptom>();
-  data.symptoms.forEach((s) =>
-    map.set(s.symptom_id, {
-      symptom_id: s.symptom_id,
-      name: s.name,
-      category: s.category,
-      intensity: s.intensity,
-    }),
-  );
-  return map;
+interface UseDailyLogFormOptions {
+  date: string;
+  cycleId: string;
+  onSuccess?: () => void;
 }
+
+const FLOW_LABELS: Record<FlowLevel, string> = {
+  none: "Ninguno",
+  light: "Leve",
+  medium: "Medio",
+  heavy: "Abundante",
+};
+
+export { FLOW_LABELS };
 
 export function useDailyLogForm({
-  cycleId,
   date,
-  initialData,
+  cycleId,
   onSuccess,
 }: UseDailyLogFormOptions): UseDailyLogFormReturn {
-  const [selectedSymptoms, setSelectedSymptoms] = useState<
-    Map<number, SelectedSymptom>
-  >(() => buildInitialSymptoms(initialData));
-  const [flowLevel, setFlowLevel] = useState<string>(
-    initialData?.flow_level ?? "none",
-  );
-  const [temperature, setTemperature] = useState(
-    initialData?.temperature?.toString() ?? "",
-  );
-  const [notes, setNotes] = useState(initialData?.notes ?? "");
+  const [symptomsCatalog, setSymptomsCatalog] = useState<SymptomCatalog[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [selectedSymptoms, setSelectedSymptoms] = useState<
+    Record<number, number>
+  >({});
+  const [flowLevel, setFlowLevelState] = useState<FlowLevel>("none");
+  const [temperature, setTemperature] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [existingLog, setExistingLog] = useState<DailyLog | null>(null);
 
-  const toggleSymptom = useCallback(
-    (symptom: { id: number; name: string; category: string }) => {
-      setSelectedSymptoms((prev) => {
-        const next = new Map(prev);
-        if (next.has(symptom.id)) {
-          next.delete(symptom.id);
-        } else {
-          next.set(symptom.id, {
-            symptom_id: symptom.id,
-            name: symptom.name,
-            category: symptom.category,
-            intensity: 3,
-          });
-        }
-        return next;
-      });
+  // Load catalog + existing log
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
       setError(null);
-    },
-    [],
-  );
+      try {
+        const [catalog, log] = await Promise.all([
+          getSymptomsCatalog(),
+          getDailyLogByDate(cycleId, date),
+        ]);
+        if (!cancelled) {
+          setSymptomsCatalog(catalog);
+          if (log) {
+            setExistingLog(log);
+            const symptomsMap: Record<number, number> = {};
+            for (const s of log.symptoms) {
+              symptomsMap[s.symptom_id] = s.intensity;
+            }
+            setSelectedSymptoms(symptomsMap);
+            setFlowLevelState(log.flow_level || "none");
+            setTemperature(
+              log.temperature !== null ? String(log.temperature) : "",
+            );
+            setNotes(log.notes ?? "");
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          setError("No se pudo cargar el formulario. Intenta de nuevo.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
 
-  const setIntensity = useCallback((symptomId: number, intensity: number) => {
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [cycleId, date]);
+
+  const toggleSymptom = useCallback((symptomId: number) => {
     setSelectedSymptoms((prev) => {
-      const next = new Map(prev);
-      const existing = next.get(symptomId);
-      if (existing) {
-        next.set(symptomId, { ...existing, intensity });
+      const next = { ...prev };
+      if (symptomId in next) {
+        delete next[symptomId];
+      } else {
+        next[symptomId] = 1;
       }
       return next;
     });
   }, []);
 
-  const handleSubmit = useCallback(async () => {
-    const symptomsArray: DailySymptom[] = Array.from(
-      selectedSymptoms.values(),
-    ).map((s) => ({
-      symptom_id: s.symptom_id,
-      name: s.name,
-      category: s.category,
-      intensity: s.intensity,
-    }));
+  const setIntensity = useCallback(
+    (symptomId: number, intensity: number) => {
+      setSelectedSymptoms((prev) => {
+        if (!(symptomId in prev)) return prev;
+        return { ...prev, [symptomId]: intensity };
+      });
+    },
+    [],
+  );
 
-    const tempValue = temperature ? parseFloat(temperature) : null;
+  const setFlowLevel = useCallback((level: FlowLevel) => {
+    setFlowLevelState(level);
+  }, []);
 
-    if (
-      temperature &&
-      (isNaN(tempValue!) || tempValue! < 35 || tempValue! > 42)
-    ) {
-      setError("La temperatura debe estar entre 35°C y 42°C");
-      return;
-    }
-
+  const submit = useCallback(async () => {
+    setSaving(true);
     setError(null);
-    setSubmitting(true);
-    setSuccessMessage(null);
+    setSuccess(false);
 
     try {
-      if (initialData) {
-        await updateDailyLog(initialData.id, cycleId, {
+      const symptomsPayload = Object.entries(selectedSymptoms).map(
+        ([id, intensity]) => ({
+          symptom_id: Number(id),
+          intensity,
+        }),
+      );
+
+      if (existingLog) {
+        await updateDailyLog(existingLog.id, {
           flow_level: flowLevel,
-          temperature: tempValue,
+          temperature: temperature ? parseFloat(temperature) : null,
           notes: notes || null,
-          symptoms: symptomsArray,
+          symptoms: symptomsPayload,
         });
-        setSuccessMessage("Registro actualizado correctamente");
       } else {
         await createDailyLog({
           cycle_id: cycleId,
           date,
           flow_level: flowLevel,
-          temperature: tempValue,
-          notes: notes || null,
-          symptoms: symptomsArray,
+          temperature: temperature ? parseFloat(temperature) : undefined,
+          notes: notes || undefined,
+          symptoms: symptomsPayload,
         });
-        setSuccessMessage("Registro guardado correctamente");
       }
 
-      setTimeout(onSuccess, 800);
-    } catch {
-      setError("Ocurrió un error al guardar. Intenta de nuevo.");
+      setSuccess(true);
+      onSuccess?.();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Error al guardar el registro. Intenta de nuevo.",
+      );
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
-  }, [selectedSymptoms, flowLevel, temperature, notes, cycleId, date, initialData, onSuccess]);
-
-  const dismissSuccess = useCallback(() => {
-    setSuccessMessage(null);
-  }, []);
+  }, [selectedSymptoms, flowLevel, temperature, notes, existingLog, cycleId, date, onSuccess]);
 
   return {
+    symptomsCatalog,
+    loading,
+    error,
     selectedSymptoms,
     flowLevel,
     temperature,
     notes,
-    error,
-    submitting,
-    successMessage,
+    saving,
+    success,
+    existingLog,
     toggleSymptom,
     setIntensity,
     setFlowLevel,
     setTemperature,
     setNotes,
-    handleSubmit,
-    dismissSuccess,
+    submit,
   };
 }

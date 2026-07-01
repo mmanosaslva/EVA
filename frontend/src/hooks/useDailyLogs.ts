@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { DailyLog } from "../lib/types";
-import { getDailyLogsByCycle } from "../services/dailyLogService";
+import { getDailyLogsByCycle } from "../services/symptomService";
 
 interface UseDailyLogsReturn {
   logs: DailyLog[];
@@ -27,7 +27,7 @@ export function useDailyLogs(cycleId: string): UseDailyLogsReturn {
         }
       } catch {
         if (!cancelled) {
-          setError("No se pudieron cargar los registros");
+          setError("No se pudieron cargar los registros del ciclo");
         }
       } finally {
         if (!cancelled) {
@@ -50,7 +50,7 @@ export function useDailyLogs(cycleId: string): UseDailyLogsReturn {
       const data = await getDailyLogsByCycle(cycleId);
       setLogs(data);
     } catch {
-      setError("No se pudieron cargar los registros");
+      setError("No se pudieron cargar los registros del ciclo");
     } finally {
       setLoading(false);
     }

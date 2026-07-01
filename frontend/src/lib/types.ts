@@ -112,6 +112,13 @@ export interface CyclesResponse {
   cycles: Cycle[];
 }
 
+export interface SymptomCatalog {
+  id: number;
+  name: string;
+  category: string;
+  common_phase: string | null;
+}
+
 export interface DailySymptom {
   symptom_id: number;
   name: string;

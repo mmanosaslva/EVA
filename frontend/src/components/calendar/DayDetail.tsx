@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import type { CalendarDay } from "../../lib/types";
 import { PHASE_LABELS } from "../../lib/cycleUtils";
 import { Card } from "../ui/Card";
@@ -8,31 +9,31 @@ interface DayDetailProps {
   day: CalendarDay | null;
   onClose: () => void;
   onEditCycle?: (cycleId: string) => void;
-  onRegisterDay?: (date: string, cycleId: string) => void;
-  onViewHistory?: (cycleId: string) => void;
 }
 
-export function DayDetail({
-  day,
-  onClose,
-  onEditCycle,
-  onRegisterDay,
-  onViewHistory,
-}: DayDetailProps) {
-  if (!day) return null;
-
-  const formattedDate = day.date.toLocaleDateString("es-ES", {
+function formatDate(date: Date): string {
+  return date.toLocaleDateString("es-ES", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
+}
+
+function formatDateUrl(date: Date): string {
+  return date.toISOString().split("T")[0];
+}
+
+export function DayDetail({ day, onClose, onEditCycle }: DayDetailProps) {
+  const navigate = useNavigate();
+
+  if (!day) return null;
 
   return (
     <Card padding="md" className="mx-1 mt-3">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-base font-semibold text-text-primary capitalize">
-            {formattedDate}
+            {formatDate(day.date)}
           </h3>
           {day.phase ? (
             <Badge variant={day.phase} className="mt-1">
@@ -117,29 +118,17 @@ export function DayDetail({
 
       {day.cycleId && (
         <div className="mt-4 pt-3 border-t border-border space-y-2">
-          {onRegisterDay && (
-            <Button
-              variant="primary"
-              className="w-full text-sm"
-              onClick={() =>
-                onRegisterDay(
-                  day.date.toISOString().split("T")[0],
-                  day.cycleId!,
-                )
-              }
-            >
-              {day.dailyLog ? "Editar registro del día" : "Registrar síntomas"}
-            </Button>
-          )}
-          {onViewHistory && (
-            <Button
-              variant="secondary"
-              className="w-full text-sm"
-              onClick={() => onViewHistory(day.cycleId!)}
-            >
-              Ver historial del ciclo
-            </Button>
-          )}
+          <Button
+            variant="primary"
+            className="w-full text-sm"
+            onClick={() =>
+              navigate(
+                `/symptoms?date=${formatDateUrl(day.date)}&cycleId=${day.cycleId}`,
+              )
+            }
+          >
+            {day.dailyLog ? "Editar síntomas" : "Registrar síntomas"}
+          </Button>
           {onEditCycle && (
             <Button
               variant="ghost"

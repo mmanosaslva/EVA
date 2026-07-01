@@ -2,9 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
 import DemoPage from "./pages/DemoPage";
 import CalendarPage from "./pages/CalendarPage";
+import SymptomsPage from "./pages/SymptomsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import SymptomHistoryPage from "./pages/SymptomHistoryPage";
 
 function App() {
   return (
@@ -21,10 +21,10 @@ function App() {
           }
         />
         <Route
-          path="/history/:cycleId"
+          path="/symptoms"
           element={
             <PrivateRoute>
-              <SymptomHistoryPage />
+              <SymptomsPage />
             </PrivateRoute>
           }
         />

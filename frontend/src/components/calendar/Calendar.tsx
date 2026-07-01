@@ -8,16 +8,9 @@ import { DayDetail } from "./DayDetail";
 interface CalendarProps {
   cycles: Cycle[];
   onEditCycle?: (cycleId: string) => void;
-  onRegisterDay?: (date: string, cycleId: string) => void;
-  onViewHistory?: (cycleId: string) => void;
 }
 
-export function Calendar({
-  cycles,
-  onEditCycle,
-  onRegisterDay,
-  onViewHistory,
-}: CalendarProps) {
+export function Calendar({ cycles, onEditCycle }: CalendarProps) {
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -91,8 +84,6 @@ export function Calendar({
         day={selectedDay}
         onClose={() => setSelectedDay(null)}
         onEditCycle={onEditCycle}
-        onRegisterDay={onRegisterDay}
-        onViewHistory={onViewHistory}
       />
     </div>
   );
