@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
+import Dashboard from "./pages/Dashboard";
 import DemoPage from "./pages/DemoPage";
 import CalendarPage from "./pages/CalendarPage";
 import SymptomsPage from "./pages/SymptomsPage";
@@ -12,6 +13,14 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/calendar"
           element={
@@ -36,7 +45,7 @@ function App() {
             </PrivateRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/calendar" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );

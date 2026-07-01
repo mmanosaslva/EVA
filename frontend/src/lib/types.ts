@@ -99,6 +99,8 @@ export interface AuthSession {
 
 export type CyclePhase = "menstruacion" | "folicular" | "ovulacion" | "lutea";
 
+/* ───── Ciclos ───── */
+
 export interface Cycle {
   id: string;
   start_date: string;
@@ -114,12 +116,16 @@ export interface CyclesResponse {
   cycles: Cycle[];
 }
 
+/* ───── Catálogo de síntomas ───── */
+
 export interface SymptomCatalog {
   id: number;
   name: string;
   category: string;
   common_phase: string | null;
 }
+
+/* ───── Registro diario ───── */
 
 export interface DailySymptom {
   symptom_id: number;
@@ -136,6 +142,8 @@ export interface DailyLog {
   notes: string | null;
   symptoms: DailySymptom[];
 }
+
+/* ───── Calendario ───── */
 
 export interface CalendarDay {
   date: Date;
