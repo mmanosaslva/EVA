@@ -96,6 +96,7 @@ sync_operations_table = Table(
     Column("type", String(30), nullable=False),
     Column("payload", Text, nullable=False),
     Column("status", String(20), nullable=False, server_default=func.text("'applied'")),
+    Column("server_id", String(36), nullable=True),
     Column("applied_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     CheckConstraint("type IN ('CREATE_CYCLE', 'UPDATE_CYCLE', 'DELETE_CYCLE', 'CREATE_DAILY_LOG', 'UPDATE_DAILY_LOG', 'DELETE_DAILY_LOG')", name="chk_sync_type"),
     CheckConstraint("status IN ('applied', 'skipped', 'failed')", name="chk_sync_status"),

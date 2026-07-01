@@ -26,6 +26,12 @@ from app.repositories.symptom_repo import (
     remove_all_symptoms_from_log,
 )
 
+from app.repositories.sync_repo import (
+    find_by_client_id,
+    insert_sync_operation,
+    resolve_client_id,
+)
+
 __all__ = [
     "get_cycles_by_user",
     "get_cycle_by_id",
@@ -48,4 +54,7 @@ __all__ = [
     "add_symptoms_to_log",
     "remove_symptoms_from_log",
     "remove_all_symptoms_from_log",
+    "find_by_client_id",
+    "insert_sync_operation",
+    "resolve_client_id",
 ]
