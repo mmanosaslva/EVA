@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import type { CalendarDay } from "../../lib/types";
 import { PHASE_LABELS } from "../../lib/cycleUtils";
 import { Card } from "../ui/Card";
@@ -18,7 +19,13 @@ function formatDate(date: Date): string {
   });
 }
 
+function formatDateUrl(date: Date): string {
+  return date.toISOString().split("T")[0];
+}
+
 export function DayDetail({ day, onClose, onEditCycle }: DayDetailProps) {
+  const navigate = useNavigate();
+
   if (!day) return null;
 
   return (
@@ -109,15 +116,28 @@ export function DayDetail({ day, onClose, onEditCycle }: DayDetailProps) {
         </p>
       )}
 
-      {day.cycleId && onEditCycle && (
-        <div className="mt-4 pt-3 border-t border-border">
+      {day.cycleId && (
+        <div className="mt-4 pt-3 border-t border-border space-y-2">
           <Button
-            variant="ghost"
+            variant="primary"
             className="w-full text-sm"
-            onClick={() => onEditCycle(day.cycleId!)}
+            onClick={() =>
+              navigate(
+                `/symptoms?date=${formatDateUrl(day.date)}&cycleId=${day.cycleId}`,
+              )
+            }
           >
-            Editar este ciclo
+            {day.dailyLog ? "Editar síntomas" : "Registrar síntomas"}
           </Button>
+          {onEditCycle && (
+            <Button
+              variant="ghost"
+              className="w-full text-sm"
+              onClick={() => onEditCycle(day.cycleId!)}
+            >
+              Editar este ciclo
+            </Button>
+          )}
         </div>
       )}
     </Card>
