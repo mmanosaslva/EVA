@@ -44,7 +44,7 @@ export default function ExportPage() {
   if (deleteSuccess) {
     return (
       <div className="mx-auto max-w-lg px-4 py-20 text-center">
-        <p className="text-5xl mb-4">👋</p>
+        <p className="text-5xl mb-4" aria-hidden="true">👋</p>
         <h2 className="text-lg font-semibold text-text-primary mb-2">
           Cuenta eliminada
         </h2>

@@ -61,6 +61,7 @@ function DeleteAccountModal({ onClose, onConfirm }: DeleteAccountModalProps) {
         <input
           type="text"
           placeholder="Escribí ELIMINAR"
+          aria-label="Confirmar eliminación escribiendo ELIMINAR"
           className="w-full rounded-lg border border-border px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-red-400/30 mb-4"
           onChange={(e) => setConfirmed(e.target.value === "ELIMINAR")}
         />
