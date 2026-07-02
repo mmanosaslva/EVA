@@ -4,12 +4,13 @@ test.describe("Página de login", () => {
   test("muestra el formulario de inicio de sesión", async ({ page }) => {
     await page.goto("/login", { waitUntil: "networkidle" });
     await expect(
-      page.getByRole("heading", { name: /iniciar sesión/i }),
+      page.getByRole("heading", { name: /EVA/i }),
     ).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Inicia sesión/i)).toBeVisible();
     await expect(page.getByLabel(/email/i)).toBeVisible();
     await expect(page.getByLabel(/contraseña/i)).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /iniciar sesión/i }),
+      page.getByRole("button", { name: /Iniciar sesión/i }),
     ).toBeVisible();
   });
 
@@ -17,18 +18,18 @@ test.describe("Página de login", () => {
     await page.goto("/dashboard", { waitUntil: "networkidle" });
     await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
     await expect(
-      page.getByRole("heading", { name: /iniciar sesión/i }),
+      page.getByRole("heading", { name: /EVA/i }),
     ).toBeVisible({ timeout: 15000 });
   });
 
   test("muestra enlace para ir a registro", async ({ page }) => {
     await page.goto("/login", { waitUntil: "networkidle" });
     await expect(
-      page.getByRole("heading", { name: /iniciar sesión/i }),
+      page.getByRole("heading", { name: /EVA/i }),
     ).toBeVisible({ timeout: 15000 });
 
     const registerLink = page.getByRole("link", {
-      name: /registrate/i,
+      name: /Regístrate/i,
     });
     await expect(registerLink).toBeVisible();
   });

@@ -9,7 +9,7 @@ test.describe("Modo offline", () => {
   test("muestra indicador offline al desconectar red", async ({ page }) => {
     await page.goto("/dashboard", { waitUntil: "networkidle" });
     await expect(
-      page.getByRole("heading", { name: /panel/i }),
+      page.getByRole("heading", { name: /EVA/i }),
     ).toBeVisible({ timeout: 15000 });
 
     await page.context().setOffline(true);
@@ -27,7 +27,7 @@ test.describe("Modo offline", () => {
   }) => {
     await page.goto("/symptoms", { waitUntil: "networkidle" });
     await expect(
-      page.getByRole("heading", { name: /síntomas/i }),
+      page.getByRole("heading", { name: /Síntomas/i }),
     ).toBeVisible({ timeout: 15000 });
 
     await page.context().setOffline(true);
@@ -55,14 +55,14 @@ test.describe("Modo offline", () => {
   test("accede al dashboard desde cache sin conexión", async ({ page }) => {
     await page.goto("/dashboard", { waitUntil: "networkidle" });
     await expect(
-      page.getByRole("heading", { name: /panel/i }),
+      page.getByRole("heading", { name: /EVA/i }),
     ).toBeVisible({ timeout: 15000 });
 
     await page.context().setOffline(true);
 
     await page.goto("/dashboard", { waitUntil: "networkidle" });
     await expect(
-      page.getByRole("heading", { name: /panel/i }),
+      page.getByRole("heading", { name: /EVA/i }),
     ).toBeVisible({ timeout: 15000 });
 
     await page.context().setOffline(false);
@@ -71,7 +71,7 @@ test.describe("Modo offline", () => {
   test("crea ciclo offline y aparece offline indicator", async ({ page }) => {
     await page.goto("/calendar", { waitUntil: "networkidle" });
     await expect(
-      page.getByRole("heading", { name: /calendario/i }),
+      page.getByRole("heading", { name: /Mi Calendario/i }),
     ).toBeVisible({ timeout: 15000 });
 
     await page.context().setOffline(true);
