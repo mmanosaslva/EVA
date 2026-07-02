@@ -1,7 +1,5 @@
 import type { Page } from "@playwright/test";
 
-const PROJECT_REF = "nrvkuofqbzvrciyvhgbs";
-
 function makeMockSession() {
   const now = Math.floor(Date.now() / 1000);
   return {
@@ -29,14 +27,18 @@ function makeMockSession() {
   };
 }
 
+const PROJECT_REF = "nrvkuofqbzvrciyvhgbs";
+
 export async function mockSupabaseAuth(page: Page) {
-  const session = makeMockSession();
+  const session = JSON.stringify(makeMockSession());
   const storageKey = `sb-${PROJECT_REF}-auth-token`;
 
-  await page.addInitScript((args) => {
-    const { key, session: sessionData } = args;
-    localStorage.setItem(key, JSON.stringify(sessionData));
-  }, { key: storageKey, session });
+  await page.addInitScript(
+    ({ key, data }) => {
+      localStorage.setItem(key, data);
+    },
+    { key: storageKey, data: session },
+  );
 }
 
 export async function clearSupabaseAuth(page: Page) {
