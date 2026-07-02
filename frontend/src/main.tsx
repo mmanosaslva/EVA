@@ -13,7 +13,7 @@ if (SENTRY_DSN) {
     tracesSampleRate: 0.1,
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
-    beforeSend(event) {
+    beforeSend(event: Sentry.ErrorEvent) {
       if (event.request?.headers?.authorization) {
         event.request.headers.authorization = "[FILTERED]"
       }

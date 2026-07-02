@@ -12,6 +12,9 @@ interface PredictionWidgetProps {
   fertileEnd: string;
   source: "heuristic" | "prophet";
   cycleVariability: number;
+  modelMaeDays: number | null;
+  cyclesUsedForTraining: number | null;
+  totalCycles: number;
   hasCycles: boolean;
 }
 
@@ -27,6 +30,50 @@ function formatDateShort(dateStr: string): string {
     day: "numeric",
     month: "short",
   });
+}
+
+function daysBetween(a: string, b: string): number {
+  const da = new Date(a);
+  const db = new Date(b);
+  return Math.floor((db.getTime() - da.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function ConfidenceBar({
+  early,
+  late,
+  predicted,
+}: {
+  early: string;
+  late: string;
+  predicted: string;
+}) {
+  const total = daysBetween(early, late) || 1;
+  const predictedPct = Math.max(0, Math.min(100, (daysBetween(early, predicted) / total) * 100));
+
+  return (
+    <div className="w-full max-w-xs mt-2">
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] text-text-muted w-14 text-right">
+          {formatDateShort(early)}
+        </span>
+        <div className="relative flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+          <div
+            className="absolute inset-0 rounded-full bg-lavender-100"
+          />
+          <div
+            className="absolute top-0 h-full rounded-full bg-lavender-400"
+            style={{ left: `${predictedPct - 2}%`, width: "4%" }}
+          />
+        </div>
+        <span className="text-[10px] text-text-muted w-14">
+          {formatDateShort(late)}
+        </span>
+      </div>
+      <p className="text-[10px] text-text-muted mt-0.5">
+        Probable: {formatDateShort(predicted)}
+      </p>
+    </div>
+  );
 }
 
 function TooltipContent() {
@@ -48,6 +95,9 @@ export function PredictionWidget({
   fertileEnd,
   source,
   cycleVariability,
+  modelMaeDays,
+  cyclesUsedForTraining,
+  totalCycles,
   hasCycles,
 }: PredictionWidgetProps) {
   const navigate = useNavigate();
@@ -71,6 +121,8 @@ export function PredictionWidget({
       </Card>
     );
   }
+
+  const showMotivational = totalCycles > 0 && totalCycles < 3 && source === "heuristic";
 
   return (
     <Card padding="md" className="bg-surface-alt">
@@ -122,19 +174,39 @@ export function PredictionWidget({
           </div>
         </div>
 
-        <div className="relative group">
-          <Badge
-            variant={source === "prophet" ? "folicular" : "default"}
-            className="cursor-help"
-          >
-            {source === "prophet" ? "IA activada" : "Predicción básica"}
-          </Badge>
-          {source === "heuristic" && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
-              <div className="rounded-lg border border-border bg-white px-3 py-2 shadow-md w-56">
-                <TooltipContent />
+        <ConfidenceBar
+          early={confidenceEarly}
+          late={confidenceLate}
+          predicted={predictedDate}
+        />
+
+        <div className="mt-3 space-y-2">
+          <div className="relative group">
+            <Badge
+              variant={source === "prophet" ? "folicular" : "default"}
+              className="cursor-help"
+            >
+              {source === "prophet" ? "IA activada" : "Predicción básica"}
+            </Badge>
+            {source === "heuristic" && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                <div className="rounded-lg border border-border bg-white px-3 py-2 shadow-md w-56">
+                  <TooltipContent />
+                </div>
               </div>
-            </div>
+            )}
+          </div>
+
+          {modelMaeDays !== null && cyclesUsedForTraining !== null && (
+            <p className="text-[11px] text-text-muted">
+              Precisión: ±{modelMaeDays} días en promedio · Entrenado con {cyclesUsedForTraining} ciclos
+            </p>
+          )}
+
+          {showMotivational && (
+            <p className="text-[11px] text-lavender-600 font-medium mt-1">
+              La precisión con IA se activa al registrar 3 ciclos. Llevás {totalCycles} de 3.
+            </p>
           )}
         </div>
       </div>

@@ -13,6 +13,14 @@ export interface DashboardData {
   currentPhaseDescription: string;
   predictedNextDate: string;
   daysUntilNext: number;
+  confidenceEarly: string;
+  confidenceLate: string;
+  cycleVariability: number;
+  fertileStart: string;
+  fertileEnd: string;
+  predictionSource: "heuristic" | "prophet";
+  modelMaeDays: number | null;
+  cyclesUsedForTraining: number | null;
   pastCycles: Cycle[];
   durationChartData: DurationChartPoint[];
 }
@@ -70,6 +78,16 @@ export function computeDashboardData(cycles: Cycle[]): DashboardData {
 
   const predictedCycleLength = avgCycleDuration;
 
+  let cycleVariability = 3;
+  if (cycleDurations.length >= 2) {
+    const mean =
+      cycleDurations.reduce((s, d) => s + d, 0) / cycleDurations.length;
+    const variance =
+      cycleDurations.reduce((s, d) => s + Math.pow(d - mean, 2), 0) /
+      cycleDurations.length;
+    cycleVariability = Math.max(1, Math.round(Math.sqrt(variance)));
+  }
+
   const currentCycleDay = current
     ? daysBetween(current.start_date, new Date().toISOString().split("T")[0]) + 1
     : 0;
@@ -105,6 +123,30 @@ export function computeDashboardData(cycles: Cycle[]): DashboardData {
   const todayStr = new Date().toISOString().split("T")[0];
   const daysUntilNext = Math.max(0, daysBetween(todayStr, predictedNextDate));
 
+  const earlyDate = new Date(
+    predictedDate.getTime() - cycleVariability * 86400000,
+  );
+  const lateDate = new Date(
+    predictedDate.getTime() + cycleVariability * 86400000,
+  );
+  const confidenceEarly = earlyDate.toISOString().split("T")[0];
+  const confidenceLate = lateDate.toISOString().split("T")[0];
+
+  const fertileStart = new Date(
+    predictedDate.getTime() - 16 * 86400000,
+  )
+    .toISOString()
+    .split("T")[0];
+  const fertileEnd = new Date(
+    predictedDate.getTime() - 12 * 86400000,
+  )
+    .toISOString()
+    .split("T")[0];
+
+  const predictionSource: "heuristic" | "prophet" = completed.length >= 3 ? "heuristic" : "heuristic";
+  const modelMaeDays: number | null = null;
+  const cyclesUsedForTraining: number | null = completed.length >= 3 ? completed.length : null;
+
   const pastCycles = completed.slice(-3).reverse();
 
   const durationChartData: DurationChartPoint[] = sorted
@@ -127,6 +169,14 @@ export function computeDashboardData(cycles: Cycle[]): DashboardData {
     currentPhaseDescription,
     predictedNextDate,
     daysUntilNext,
+    confidenceEarly,
+    confidenceLate,
+    cycleVariability,
+    fertileStart,
+    fertileEnd,
+    predictionSource,
+    modelMaeDays,
+    cyclesUsedForTraining,
     pastCycles,
     durationChartData,
   };
