@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
-import type { DailyLog } from "../lib/types";
+import type { DailyLogResponse } from "../lib/types";
 import { getDailyLogsByCycle } from "../services/symptomService";
 
 interface UseDailyLogsReturn {
-  logs: DailyLog[];
+  logs: DailyLogResponse[];
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
 
 export function useDailyLogs(cycleId: string): UseDailyLogsReturn {
-  const [logs, setLogs] = useState<DailyLog[]>([]);
+  const [logs, setLogs] = useState<DailyLogResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

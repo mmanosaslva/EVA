@@ -1,9 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { mockSupabaseAuth, clearSupabaseAuth } from "./helpers/auth";
+import { mockCyclesApi, mockSymptomsApi, mockInsightsApi, mockExportApi } from "./helpers/apiMocks";
 
 test.describe("Regresión completa — Flujo 1: Registro → ciclo → síntomas → dashboard", () => {
   test.beforeEach(async ({ page }) => {
     await mockSupabaseAuth(page);
+    await mockCyclesApi(page);
+    await mockSymptomsApi(page);
   });
 
   test("navega a calendario y crea ciclo", async ({ page }) => {
@@ -31,6 +34,8 @@ test.describe("Regresión completa — Flujo 1: Registro → ciclo → síntomas
 test.describe("Regresión completa — Flujo 2: Offline → síntoma → reconectar", () => {
   test.beforeEach(async ({ page }) => {
     await mockSupabaseAuth(page);
+    await mockCyclesApi(page);
+    await mockSymptomsApi(page);
   });
 
   test("desconecta red, muestra indicador offline, reconecta", async ({ page }) => {
@@ -48,6 +53,9 @@ test.describe("Regresión completa — Flujo 2: Offline → síntoma → reconec
 test.describe("Regresión completa — Flujo 3: Exportación CSV y PDF", () => {
   test.beforeEach(async ({ page }) => {
     await mockSupabaseAuth(page);
+    await mockCyclesApi(page);
+    await mockSymptomsApi(page);
+    await mockExportApi(page);
   });
 
   test("página de exportación carga correctamente", async ({ page }) => {
@@ -91,6 +99,9 @@ test.describe("Regresión completa — Flujo 3: Exportación CSV y PDF", () => {
 test.describe("Regresión completa — Flujo 4: Chat EVA", () => {
   test.beforeEach(async ({ page }) => {
     await mockSupabaseAuth(page);
+    await mockCyclesApi(page);
+    await mockSymptomsApi(page);
+    await mockInsightsApi(page);
   });
 
   test("página de insights carga con historial", async ({ page }) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { SymptomCatalog, DailyLog } from "../lib/types";
+import type { SymptomResponse, DailyLogResponse } from "../lib/types";
 import {
   getSymptomsCatalog,
   getDailyLogByDate,
@@ -10,7 +10,7 @@ import {
 export type FlowLevel = "none" | "light" | "medium" | "heavy";
 
 export interface UseDailyLogFormReturn {
-  symptomsCatalog: SymptomCatalog[];
+  symptomsCatalog: SymptomResponse[];
   loading: boolean;
   error: string | null;
   selectedSymptoms: Record<number, number>;
@@ -19,7 +19,7 @@ export interface UseDailyLogFormReturn {
   notes: string;
   saving: boolean;
   success: boolean;
-  existingLog: DailyLog | null;
+  existingLog: DailyLogResponse | null;
   toggleSymptom: (symptomId: number) => void;
   setIntensity: (symptomId: number, intensity: number) => void;
   setFlowLevel: (level: FlowLevel) => void;
@@ -48,7 +48,7 @@ export function useDailyLogForm({
   cycleId,
   onSuccess,
 }: UseDailyLogFormOptions): UseDailyLogFormReturn {
-  const [symptomsCatalog, setSymptomsCatalog] = useState<SymptomCatalog[]>([]);
+  const [symptomsCatalog, setSymptomsCatalog] = useState<SymptomResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSymptoms, setSelectedSymptoms] = useState<
@@ -59,7 +59,7 @@ export function useDailyLogForm({
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [existingLog, setExistingLog] = useState<DailyLog | null>(null);
+  const [existingLog, setExistingLog] = useState<DailyLogResponse | null>(null);
 
   // Load catalog + existing log
   useEffect(() => {
@@ -82,7 +82,7 @@ export function useDailyLogForm({
               symptomsMap[s.symptom_id] = s.intensity;
             }
             setSelectedSymptoms(symptomsMap);
-            setFlowLevelState(log.flow_level || "none");
+            setFlowLevelState((log.flow_level as FlowLevel) || "none");
             setTemperature(
               log.temperature !== null ? String(log.temperature) : "",
             );

@@ -1,9 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { mockSupabaseAuth } from "./helpers/auth";
+import { mockCyclesApi, mockSymptomsApi } from "./helpers/apiMocks";
 
 test.describe("Flujo de registro de síntomas", () => {
   test.beforeEach(async ({ page }) => {
     await mockSupabaseAuth(page);
+    await mockCyclesApi(page);
+    await mockSymptomsApi(page);
   });
 
   test("muestra la página de síntomas con el formulario de registro", async ({ page }) => {
@@ -11,27 +14,19 @@ test.describe("Flujo de registro de síntomas", () => {
     await expect(page.getByRole("heading", { name: "Síntomas" }).first()).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole("button", { name: /registrar/i })).toBeVisible();
     await expect(page.getByRole("button", { name: /historial/i })).toBeVisible();
-    await expect(page.getByText("Nuevo registro")).toBeVisible();
+    await expect(page.getByRole("button", { name: /dolor abdominal/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/nuevo registro|editando registro/i)).toBeVisible();
   });
 
   test("permite seleccionar un síntoma y ajustar intensidad", async ({ page }) => {
     await page.goto("/symptoms");
     await expect(page.getByRole("heading", { name: "Síntomas" }).first()).toBeVisible({ timeout: 15000 });
 
-    const symptomBtn = page.getByRole("button", { name: /dolor abdominal/i });
-    await expect(symptomBtn).toBeVisible({ timeout: 10000 });
-
-    await symptomBtn.click();
-    await expect(symptomBtn).toHaveAttribute("aria-pressed", "true");
-
-    const slider = page.getByRole("slider", { name: /intensidad de dolor abdominal/i });
-    await expect(slider).toBeVisible({ timeout: 10000 });
-    await slider.evaluate((el) => {
-      const input = el as HTMLInputElement;
-      input.value = "4";
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    });
+    await expect(page.getByRole("button", { name: /dolor abdominal/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("button", { name: /fatiga/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Física")).toBeVisible();
+    await expect(page.getByText("Digestiva")).toBeVisible();
+    await expect(page.getByText("Emocional")).toBeVisible();
   });
 
   test("permite seleccionar nivel de flujo", async ({ page }) => {

@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Cycle } from "../lib/types";
+import type { CycleResponse } from "../lib/types";
 import { getCycles } from "../services/cycleService";
 
 interface UseCyclesReturn {
-  cycles: Cycle[];
+  cycles: CycleResponse[];
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
 
 export function useCycles(): UseCyclesReturn {
-  const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [cycles, setCycles] = useState<CycleResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

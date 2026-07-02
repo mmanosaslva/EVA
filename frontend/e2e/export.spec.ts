@@ -1,9 +1,11 @@
 import { test, expect } from "@playwright/test";
 import { mockSupabaseAuth } from "./helpers/auth";
+import { mockExportApi } from "./helpers/apiMocks";
 
 test.describe("Exportación de datos", () => {
   test.beforeEach(async ({ page }) => {
     await mockSupabaseAuth(page);
+    await mockExportApi(page);
   });
 
   test("carga la página con los elementos principales", async ({ page }) => {

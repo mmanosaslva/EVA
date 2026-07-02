@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabaseClient";
+import { api } from "./apiClient";
 import { peekAll, dequeue, queueLength, markCycleSynced, markLogSynced } from "../db";
 
 type SyncStatusCallback = (status: SyncStatusState) => void;
@@ -8,6 +8,13 @@ export interface SyncStatusState {
   pendingCount: number;
   lastSyncResult: "success" | "error" | null;
   lastSyncMessage: string;
+}
+
+interface SyncResponse {
+  applied: number;
+  skipped: number;
+  failed: number;
+  results: { client_id: string; status: string; server_id?: string; error?: string }[];
 }
 
 let listeners: SyncStatusCallback[] = [];
@@ -70,18 +77,16 @@ export async function processSyncQueue(): Promise<void> {
   let successCount = 0;
   let failCount = 0;
 
+  const typeMap: Record<string, string> = {
+    "cycle-create": "CREATE_CYCLE",
+    "cycle-update": "UPDATE_CYCLE",
+    "cycle-delete": "DELETE_CYCLE",
+    "dailyLog-create": "CREATE_DAILY_LOG",
+    "dailyLog-update": "UPDATE_DAILY_LOG",
+    "dailyLog-delete": "DELETE_DAILY_LOG",
+  };
+
   const syncOps = operations.map((op) => {
-    const typeMap: Record<string, string> = {
-      "cycle-create": "CREATE_CYCLE",
-      "cycle-update": "UPDATE_CYCLE",
-      "cycle-delete": "DELETE_CYCLE",
-      "dailyLog-create": "CREATE_DAILY_LOG",
-      "dailyLog-update": "UPDATE_DAILY_LOG",
-      "dailyLog-delete": "DELETE_DAILY_LOG",
-      "dailySymptom-create": "CREATE_DAILY_LOG",
-      "dailySymptom-update": "UPDATE_DAILY_LOG",
-      "dailySymptom-delete": "DELETE_DAILY_LOG",
-    };
     const typeKey = `${op.entity}-${op.operation}`;
     return {
       client_id: `${op.entity}-${op.entityId}-${op.createdAt}`,
@@ -92,31 +97,23 @@ export async function processSyncQueue(): Promise<void> {
   });
 
   try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const result = await api.post<SyncResponse>("/sync", { operations: syncOps });
 
-    const response = await fetch("http://localhost:8000/sync", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ operations: syncOps }),
-    });
+    for (let i = 0; i < operations.length; i++) {
+      const op = operations[i];
+      const serverStatus = result.results?.[i]?.status;
 
-    const result = await response.json();
-
-    if (response.ok) {
-      for (const op of operations) {
+      if (serverStatus === "applied") {
         await dequeue();
         if (op.entity === "cycle") {
           await markCycleSynced(op.entityId);
         } else {
           await markLogSynced(op.entityId);
         }
+        successCount++;
+      } else {
+        failCount++;
       }
-      successCount = result.applied || operations.length;
-    } else {
-      failCount = operations.length;
     }
   } catch {
     failCount = operations.length;
@@ -142,4 +139,8 @@ if (typeof window !== "undefined") {
   });
 
   updatePendingCount();
+
+  if (navigator.onLine) {
+    processSyncQueue();
+  }
 }

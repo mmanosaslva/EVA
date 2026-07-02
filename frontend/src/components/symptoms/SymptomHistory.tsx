@@ -1,14 +1,14 @@
-import type { Cycle, DailyLog, DailySymptom } from "../../lib/types";
+import type { CycleResponse, DailyLogResponse, SymptomLogEntry } from "../../lib/types";
 import { getCyclePhase, PHASE_LABELS } from "../../lib/cycleUtils";
 import { Card } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 
 interface SymptomHistoryProps {
-  logs: DailyLog[];
+  logs: DailyLogResponse[];
   loading: boolean;
   error: string | null;
-  cycle: Cycle | undefined;
+  cycle: CycleResponse | undefined;
   nextCycleStartDate: string | null;
   onRegister: () => void;
 }
@@ -70,7 +70,7 @@ function IntensityBar({ value }: { value: number }) {
   );
 }
 
-function SymptomRow({ symptom }: { symptom: DailySymptom }) {
+function SymptomRow({ symptom }: { symptom: SymptomLogEntry }) {
   const icon = CATEGORY_ICONS[symptom.category] ?? CATEGORY_ICONS.otra;
   const colorClasses =
     CATEGORY_COLORS[symptom.category] ?? CATEGORY_COLORS.otra;
@@ -122,8 +122,8 @@ function DayCard({
   cycle,
   nextCycleStartDate,
 }: {
-  log: DailyLog;
-  cycle: Cycle | undefined;
+  log: DailyLogResponse;
+  cycle: CycleResponse | undefined;
   nextCycleStartDate: string | null;
 }) {
   const logDate = new Date(log.date);
@@ -151,7 +151,7 @@ function DayCard({
           )}
         </div>
         <div className="flex-shrink-0">
-          <FlowIndicator flowLevel={log.flow_level} />
+          <FlowIndicator flowLevel={log.flow_level ?? "none"} />
         </div>
       </div>
 

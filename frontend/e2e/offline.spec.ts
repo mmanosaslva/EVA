@@ -1,9 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { mockSupabaseAuth } from "./helpers/auth";
+import { mockCyclesApi, mockSymptomsApi } from "./helpers/apiMocks";
 
 test.describe("Modo offline", () => {
   test.beforeEach(async ({ page }) => {
     await mockSupabaseAuth(page);
+    await mockCyclesApi(page);
+    await mockSymptomsApi(page);
   });
 
   test("muestra indicador offline al desconectar red", async ({ page }) => {

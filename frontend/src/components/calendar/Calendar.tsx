@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from "react";
-import type { Cycle, CalendarDay } from "../../lib/types";
+import type { CycleResponse, CalendarDay } from "../../lib/types";
 import { buildCalendarDays, DAY_NAMES } from "../../lib/cycleUtils";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarCell } from "./CalendarCell";
 import { DayDetail } from "./DayDetail";
 
 interface CalendarProps {
-  cycles: Cycle[];
+  cycles: CycleResponse[];
   onEditCycle?: (cycleId: string) => void;
 }
 

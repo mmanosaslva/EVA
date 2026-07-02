@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { SymptomCatalog } from "../../lib/types";
+import type { SymptomResponse } from "../../lib/types";
 import { useDailyLogForm, FLOW_LABELS } from "../../hooks/useDailyLogForm";
 import type { FlowLevel } from "../../hooks/useDailyLogForm";
 import { Card } from "../ui/Card";
@@ -89,7 +89,7 @@ export function SymptomForm({ date, cycleId, onSuccess, onCancel }: SymptomFormP
       acc[cat].push(s);
       return acc;
     },
-    {} as Record<string, SymptomCatalog[]>,
+    {} as Record<string, SymptomResponse[]>,
   );
 
   const categoryOrder = ["fisica", "emocional", "digestiva", "otra"];

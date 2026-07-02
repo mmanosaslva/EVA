@@ -1,11 +1,11 @@
-import type { Cycle, CyclePhase } from "./types";
+import type { CycleResponse, CyclePhase } from "./types";
 import { getCyclePhase } from "./cycleUtils";
 
 export interface DashboardData {
   avgCycleDuration: number;
   avgPeriodDuration: number;
   totalCycles: number;
-  currentCycle: Cycle | null;
+  currentCycle: CycleResponse | null;
   currentCycleDay: number;
   predictedCycleLength: number;
   currentPhase: CyclePhase | null;
@@ -21,7 +21,7 @@ export interface DashboardData {
   predictionSource: "heuristic" | "prophet";
   modelMaeDays: number | null;
   cyclesUsedForTraining: number | null;
-  pastCycles: Cycle[];
+  pastCycles: CycleResponse[];
   durationChartData: DurationChartPoint[];
 }
 
@@ -46,7 +46,7 @@ function daysBetween(a: string, b: string): number {
   return Math.floor((db.getTime() - da.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function computeDashboardData(cycles: Cycle[]): DashboardData {
+export function computeDashboardData(cycles: CycleResponse[]): DashboardData {
   const sorted = [...cycles].sort(
     (a, b) =>
       new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),

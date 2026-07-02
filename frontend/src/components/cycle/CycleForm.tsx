@@ -1,4 +1,4 @@
-import type { Cycle } from "../../lib/types";
+import type { CycleResponse } from "../../lib/types";
 import { useCycleForm } from "../../hooks/useCycleForm";
 import { Card } from "../ui/Card";
 import { Input } from "../ui/Input";
@@ -6,7 +6,7 @@ import { Button } from "../ui/Button";
 import { Toast } from "../ui/Toast";
 
 interface CycleFormProps {
-  initialData?: Pick<Cycle, "id" | "start_date" | "end_date">;
+  initialData?: Pick<CycleResponse, "id" | "start_date" | "end_date">;
   onSuccess: () => void;
   onCancel: () => void;
 }

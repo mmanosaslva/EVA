@@ -13,7 +13,6 @@ h11==0.16.0
 httptools==0.7.1
 watchfiles==1.1.1
 websockets==16.0
-uvloop==0.22.1
 
 # ── Validación ───────────────────────────────────────────────
 pydantic==2.13.4

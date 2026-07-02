@@ -1,49 +1,13 @@
-import type { SymptomCatalog, DailyLog, DailySymptom } from "../lib/types";
-import { bulkSaveCatalog, getSymptomsCatalog as getCachedCatalog } from "../db/logStore";
+import type { SymptomResponse, DailyLogResponse, DailyLogListResponse, SymptomLogEntry } from "../lib/types";
+import { api } from "./apiClient";
+import { getSymptomsCatalog as getCachedCatalog } from "../db/logStore";
 import { saveLog, saveSymptoms } from "../db/logStore";
 import { enqueue } from "../db";
 
-const MOCK_SYMPTOMS: SymptomCatalog[] = [
-  { id: 1, name: "Dolor abdominal", category: "fisica", common_phase: "menstruacion" },
-  { id: 2, name: "Dolor de cabeza", category: "fisica", common_phase: "menstruacion" },
-  { id: 3, name: "Fatiga", category: "fisica", common_phase: "menstruacion" },
-  { id: 4, name: "Sensibilidad en senos", category: "fisica", common_phase: "lutea" },
-  { id: 5, name: "Dolor lumbar", category: "fisica", common_phase: "menstruacion" },
-  { id: 6, name: "Náuseas", category: "fisica", common_phase: "menstruacion" },
-  { id: 7, name: "Mareos", category: "fisica", common_phase: "menstruacion" },
-  { id: 8, name: "Insomnio", category: "fisica", common_phase: "lutea" },
-  { id: 9, name: "Acné", category: "fisica", common_phase: "lutea" },
-  { id: 10, name: "Calambres", category: "fisica", common_phase: "menstruacion" },
-  { id: 11, name: "Dolor muscular", category: "fisica", common_phase: null },
-  { id: 12, name: "Sofocos", category: "fisica", common_phase: null },
-  { id: 13, name: "Escalofríos", category: "fisica", common_phase: null },
-  { id: 14, name: "Dolor ovulatorio", category: "fisica", common_phase: "ovulacion" },
-  { id: 15, name: "Sangrado abundante", category: "fisica", common_phase: "menstruacion" },
-  { id: 16, name: "Hinchazón", category: "digestiva", common_phase: "lutea" },
-  { id: 17, name: "Estreñimiento", category: "digestiva", common_phase: "lutea" },
-  { id: 18, name: "Diarrea", category: "digestiva", common_phase: "menstruacion" },
-  { id: 19, name: "Antojos", category: "digestiva", common_phase: "lutea" },
-  { id: 20, name: "Náuseas digestivas", category: "digestiva", common_phase: null },
-  { id: 21, name: "Irritabilidad", category: "emocional", common_phase: "lutea" },
-  { id: 22, name: "Ansiedad", category: "emocional", common_phase: "lutea" },
-  { id: 23, name: "Tristeza", category: "emocional", common_phase: "lutea" },
-  { id: 24, name: "Cambios de humor", category: "emocional", common_phase: "lutea" },
-  { id: 25, name: "Falta de concentración", category: "emocional", common_phase: "lutea" },
-  { id: 26, name: "Apatía", category: "emocional", common_phase: null },
-  { id: 27, name: "Euforia", category: "emocional", common_phase: null },
-  { id: 28, name: "Libido aumentada", category: "emocional", common_phase: "ovulacion" },
-  { id: 29, name: "Libido disminuida", category: "emocional", common_phase: null },
-  { id: 30, name: "Sensibilidad emocional", category: "emocional", common_phase: "lutea" },
-];
-
-interface MockLogStore {
-  [cycleId: string]: DailyLog[];
-}
-
-const MOCK_LOGS: MockLogStore = {};
-
-export async function getSymptomsCatalog(): Promise<SymptomCatalog[]> {
+export async function getSymptomsCatalog(): Promise<SymptomResponse[]> {
   try {
+    return await api.get<SymptomResponse[]>("/symptoms");
+  } catch {
     const cached = await getCachedCatalog();
     if (cached.length > 0) {
       return cached.map((s) => ({
@@ -53,40 +17,25 @@ export async function getSymptomsCatalog(): Promise<SymptomCatalog[]> {
         common_phase: s.common_phase,
       }));
     }
-  } catch {
-    // IndexedDB no disponible, usar mock
+    throw new Error("No se pudo cargar el catálogo de síntomas");
   }
-
-  await new Promise((resolve) => setTimeout(resolve, 200));
-
-  try {
-    await bulkSaveCatalog(
-      MOCK_SYMPTOMS.map((s) => ({
-        id: s.id,
-        name: s.name,
-        category: s.category,
-        common_phase: s.common_phase,
-      })),
-    );
-  } catch {
-    // IndexedDB no disponible, continuar sin cache
-  }
-
-  return MOCK_SYMPTOMS;
 }
 
-export async function getDailyLogsByCycle(cycleId: string): Promise<DailyLog[]> {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  return MOCK_LOGS[cycleId] ?? [];
+export async function getDailyLogsByCycle(cycleId: string): Promise<DailyLogResponse[]> {
+  const result = await api.get<DailyLogListResponse>("/daily-logs", { cycle_id: cycleId });
+  return result.logs;
 }
 
 export async function getDailyLogByDate(
   cycleId: string,
   date: string,
-): Promise<DailyLog | null> {
-  await new Promise((resolve) => setTimeout(resolve, 100));
-  const logs = MOCK_LOGS[cycleId] ?? [];
-  return logs.find((l) => l.date === date) ?? null;
+): Promise<DailyLogResponse | null> {
+  try {
+    const result = await api.get<DailyLogListResponse>("/daily-logs", { cycle_id: cycleId });
+    return result.logs.find((l) => l.date === date) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function createDailyLog(data: {
@@ -96,74 +45,97 @@ export async function createDailyLog(data: {
   temperature?: number;
   notes?: string;
   symptoms: { symptom_id: number; intensity: number }[];
-}): Promise<DailyLog> {
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
-  const symptomDetails: DailySymptom[] = data.symptoms.map((s) => {
-    const catalog = MOCK_SYMPTOMS.find((c) => c.id === s.symptom_id);
-    return {
-      symptom_id: s.symptom_id,
-      name: catalog?.name ?? `Síntoma ${s.symptom_id}`,
-      category: catalog?.category ?? "otra",
-      intensity: s.intensity,
-    };
-  });
-
-  const log: DailyLog = {
-    id: `log-${Date.now()}`,
-    date: data.date,
-    flow_level: (data.flow_level as DailyLog["flow_level"]) ?? "none",
-    temperature: data.temperature ?? null,
-    notes: data.notes ?? null,
-    symptoms: symptomDetails,
-  };
-
-  if (!MOCK_LOGS[data.cycle_id]) {
-    MOCK_LOGS[data.cycle_id] = [];
-  }
-  MOCK_LOGS[data.cycle_id].push(log);
-  MOCK_LOGS[data.cycle_id].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-  );
+}): Promise<DailyLogResponse> {
+  const now = new Date().toISOString();
 
   try {
-    await saveLog(
-      {
-        id: log.id,
-        cycle_id: data.cycle_id,
-        date: log.date,
-        flow_level: log.flow_level,
-        temperature: log.temperature,
-        notes: log.notes,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      "pending",
-    );
+    const result = await api.post<DailyLogResponse>("/daily-logs", data);
+    cacheLog(result);
+    return result;
+  } catch {
+    const localId = `offline-${Date.now()}`;
+    const symptomEntries: SymptomLogEntry[] = data.symptoms.map((s) => ({
+      symptom_id: s.symptom_id,
+      name: `Síntoma ${s.symptom_id}`,
+      category: "otra",
+      common_phase: null,
+      intensity: s.intensity,
+    }));
 
-    if (data.symptoms.length > 0) {
-      await saveSymptoms(
-        data.symptoms.map((s) => ({
+    const localLog: DailyLogResponse = {
+      id: localId,
+      cycle_id: data.cycle_id,
+      date: data.date,
+      flow_level: data.flow_level ?? null,
+      temperature: data.temperature ?? null,
+      notes: data.notes ?? null,
+      created_at: now,
+      updated_at: now,
+      symptoms: symptomEntries,
+    };
+
+    try {
+      await saveLog({
+        id: localId,
+        cycle_id: data.cycle_id,
+        date: data.date,
+        flow_level: data.flow_level ?? "none",
+        temperature: data.temperature ?? null,
+        notes: data.notes ?? null,
+        created_at: now,
+        updated_at: now,
+      }, "pending");
+
+      if (data.symptoms.length > 0) {
+        await saveSymptoms(
+          data.symptoms.map((s) => ({
+            log_id: localId,
+            symptom_id: s.symptom_id,
+            intensity: s.intensity,
+          })),
+        );
+      }
+
+      await enqueue({
+        entity: "dailyLog",
+        operation: "create",
+        entityId: localId,
+        payload: data as unknown as Record<string, unknown>,
+        createdAt: now,
+        retryCount: 0,
+      });
+    } catch {
+      // IndexedDB no disponible
+    }
+    return localLog;
+  }
+}
+
+function cacheLog(log: DailyLogResponse): void {
+  try {
+    saveLog({
+      id: log.id,
+      cycle_id: log.cycle_id,
+      date: log.date,
+      flow_level: log.flow_level ?? "none",
+      temperature: log.temperature,
+      notes: log.notes,
+      created_at: log.created_at,
+      updated_at: log.updated_at,
+    }, "synced");
+
+    if (log.symptoms.length > 0) {
+      saveSymptoms(
+        log.symptoms.map((s) => ({
           log_id: log.id,
           symptom_id: s.symptom_id,
           intensity: s.intensity,
         })),
       );
     }
-
-    await enqueue({
-      entity: "dailyLog",
-      operation: "create",
-      entityId: log.id,
-      payload: data,
-      createdAt: new Date().toISOString(),
-      retryCount: 0,
-    });
   } catch {
     // IndexedDB no disponible
   }
-
-  return log;
 }
 
 export async function updateDailyLog(
@@ -174,37 +146,89 @@ export async function updateDailyLog(
     temperature?: number | null;
     notes?: string | null;
     symptoms?: { symptom_id: number; intensity: number }[];
+    cycle_id?: string;
   },
-): Promise<DailyLog> {
-  await new Promise((resolve) => setTimeout(resolve, 300));
+): Promise<DailyLogResponse> {
+  try {
+    const result = await api.put<DailyLogResponse>(`/daily-logs/${logId}`, data);
+    cacheLog(result);
+    return result;
+  } catch {
+    const now = new Date().toISOString();
+    const symptomEntries: SymptomLogEntry[] = (data.symptoms || []).map((s) => ({
+      symptom_id: s.symptom_id,
+      name: `Síntoma ${s.symptom_id}`,
+      category: "otra",
+      common_phase: null,
+      intensity: s.intensity,
+    }));
 
-  for (const cycleLogs of Object.values(MOCK_LOGS)) {
-    const idx = cycleLogs.findIndex((l) => l.id === logId);
-    if (idx === -1) continue;
+    const localLog: DailyLogResponse = {
+      id: logId,
+      cycle_id: data.cycle_id ?? "",
+      date: data.date ?? "",
+      flow_level: data.flow_level ?? null,
+      temperature: data.temperature ?? null,
+      notes: data.notes ?? null,
+      created_at: now,
+      updated_at: now,
+      symptoms: symptomEntries,
+    };
 
-    const existing = cycleLogs[idx];
+    try {
+      await saveLog({
+        id: logId,
+        cycle_id: data.cycle_id ?? "",
+        date: data.date ?? "",
+        flow_level: data.flow_level ?? "none",
+        temperature: data.temperature ?? null,
+        notes: data.notes ?? null,
+        created_at: now,
+        updated_at: now,
+      }, "pending");
 
-    if (data.symptoms) {
-      const symptomDetails: DailySymptom[] = data.symptoms.map((s) => {
-        const catalog = MOCK_SYMPTOMS.find((c) => c.id === s.symptom_id);
-        return {
-          symptom_id: s.symptom_id,
-          name: catalog?.name ?? `Síntoma ${s.symptom_id}`,
-          category: catalog?.category ?? "otra",
-          intensity: s.intensity,
-        };
+      if (data.symptoms && data.symptoms.length > 0) {
+        await saveSymptoms(
+          data.symptoms.map((s) => ({
+            log_id: logId,
+            symptom_id: s.symptom_id,
+            intensity: s.intensity,
+          })),
+        );
+      }
+
+      await enqueue({
+        entity: "dailyLog",
+        operation: "update",
+        entityId: logId,
+        payload: data as unknown as Record<string, unknown>,
+        createdAt: now,
+        retryCount: 0,
       });
-      existing.symptoms = symptomDetails;
+    } catch {
+      // IndexedDB no disponible
     }
-
-    if (data.date) existing.date = data.date;
-    if (data.flow_level !== undefined)
-      existing.flow_level = data.flow_level as DailyLog["flow_level"];
-    if (data.temperature !== undefined) existing.temperature = data.temperature;
-    if (data.notes !== undefined) existing.notes = data.notes;
-
-    return { ...existing };
+    return localLog;
   }
+}
 
-  throw new Error("Daily log not found");
+export async function deleteDailyLog(logId: string): Promise<void> {
+  try {
+    await api.delete(`/daily-logs/${logId}`);
+  } catch {
+    const now = new Date().toISOString();
+    try {
+      await enqueue({
+        entity: "dailyLog",
+        operation: "delete",
+        entityId: logId,
+        payload: {},
+        createdAt: now,
+        retryCount: 0,
+      });
+    } catch {
+      // IndexedDB no disponible
+    }
+    throw new Error("No se pudo eliminar el registro en este momento");
+  }
 }

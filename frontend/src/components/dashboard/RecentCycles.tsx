@@ -1,9 +1,9 @@
-import type { Cycle } from "../../lib/types";
+import type { CycleResponse } from "../../lib/types";
 import { Card } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 
 interface RecentCyclesProps {
-  cycles: Cycle[];
+  cycles: CycleResponse[];
 }
 
 function formatDate(dateStr: string): string {
@@ -14,7 +14,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function CycleRow({ cycle, isLast }: { cycle: Cycle; isLast: boolean }) {
+function CycleRow({ cycle, isLast }: { cycle: CycleResponse; isLast: boolean }) {
   const startStr = formatDate(cycle.start_date);
   const endStr = cycle.end_date
     ? formatDate(cycle.end_date)
@@ -39,7 +39,7 @@ function CycleRow({ cycle, isLast }: { cycle: Cycle; isLast: boolean }) {
       </div>
       <div className="flex items-center gap-2">
         <span className="text-xs text-text-secondary">
-          {cycle.duration_days > 0
+          {(cycle.duration_days ?? 0) > 0
             ? `${cycle.duration_days} días`
             : "En curso"}
         </span>

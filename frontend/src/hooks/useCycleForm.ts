@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
-import type { Cycle } from "../lib/types";
+import type { CycleResponse } from "../lib/types";
 import { createCycle, updateCycle } from "../services/cycleService";
 
 interface UseCycleFormOptions {
-  initialData?: Pick<Cycle, "id" | "start_date" | "end_date">;
+  initialData?: Pick<CycleResponse, "id" | "start_date" | "end_date">;
   onSuccess: () => void;
 }
 

@@ -1,8 +1,8 @@
-import type { Cycle, CalendarDay, CyclePhase } from "./types";
+import type { CycleResponse, CalendarDay, CyclePhase } from "./types";
 
 export function getCyclePhase(
   date: Date,
-  cycle: Cycle,
+  cycle: CycleResponse,
   nextCycleStart: Date | null,
 ): CyclePhase {
   const start = new Date(cycle.start_date);
@@ -50,7 +50,7 @@ function isSameDay(a: Date, b: Date): boolean {
 export function buildCalendarDays(
   year: number,
   month: number,
-  cycles: Cycle[],
+  cycles: CycleResponse[],
 ): CalendarDay[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -123,7 +123,7 @@ export function buildCalendarDays(
 
 function findPhaseForDate(
   date: Date,
-  sortedCycles: Cycle[],
+  sortedCycles: CycleResponse[],
 ): { phase: CyclePhase | null; cycleId: string | null } {
   for (let i = 0; i < sortedCycles.length; i++) {
     const cycle = sortedCycles[i];
