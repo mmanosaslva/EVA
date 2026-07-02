@@ -8,7 +8,7 @@ test.describe("Modo offline", () => {
 
   test("muestra indicador offline al desconectar red", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: /panel/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "EVA" })).toBeVisible({ timeout: 15000 });
 
     await page.context().setOffline(true);
 
@@ -20,18 +20,19 @@ test.describe("Modo offline", () => {
 
   test("permite registrar síntoma offline y muestra en historial al reconectar", async ({ page }) => {
     await page.goto("/symptoms");
-    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "Síntomas" })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("button", { name: /dolor abdominal/i })).toBeVisible({ timeout: 10000 });
 
     await page.context().setOffline(true);
 
     await expect(page.getByText(/sin conexión/i)).toBeVisible({ timeout: 5000 });
 
     await page.getByRole("button", { name: /dolor abdominal/i }).click();
-    await page.getByRole("button", { name: /moderad/i }).click();
+    await page.getByRole("button", { name: /medio/i }).click();
 
     await page.getByRole("button", { name: /guardar/i }).click();
 
-    await expect(page.getByText(/guardado|registrado/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Registro guardado correctamente")).toBeVisible({ timeout: 5000 });
 
     await page.context().setOffline(false);
 
@@ -40,12 +41,15 @@ test.describe("Modo offline", () => {
 
   test("accede al dashboard desde cache sin conexión", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: /panel/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "EVA" })).toBeVisible({ timeout: 15000 });
+
+    const hasSw = await page.evaluate(() => "serviceWorker" in navigator && !!navigator.serviceWorker.controller);
+    test.skip(!hasSw, "Requiere service worker registrado (solo en producción)");
 
     await page.context().setOffline(true);
 
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: /panel/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "EVA" })).toBeVisible({ timeout: 15000 });
 
     await page.context().setOffline(false);
   });
