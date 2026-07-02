@@ -14,7 +14,7 @@ router = APIRouter(prefix="/predictions", tags=["predictions"])
 @router.get("/next", response_model=PredictionResponse)
 async def get_next_prediction(current_user: dict = Depends(get_current_user)):
     user_id: str = current_user["user_id"]
-    result = await prediction_service.predict_next_cycle_heuristic(user_id)
+    result = await prediction_service.predict_next_cycle(user_id)
 
     if not result["has_sufficient_data"]:
         raise HTTPException(
@@ -32,6 +32,8 @@ async def get_next_prediction(current_user: dict = Depends(get_current_user)):
         current_phase=result["current_phase"],
         current_phase_day=result["current_phase_day"],
         prediction_source=result["prediction_source"],
+        model_mae_days=result.get("model_mae_days"),
+        cycles_used_for_training=result.get("cycles_used_for_training"),
         fertile_window=FertileWindow(
             start=result["fertile_window"]["start"],
             end=result["fertile_window"]["end"],

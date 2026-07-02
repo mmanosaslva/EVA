@@ -21,4 +21,6 @@ class PredictionResponse(BaseModel):
     current_phase: Optional[str] = None
     current_phase_day: Optional[int] = None
     prediction_source: Optional[str] = None
+    model_mae_days: Optional[float] = None
+    cycles_used_for_training: Optional[int] = None
     fertile_window: FertileWindow = FertileWindow()
