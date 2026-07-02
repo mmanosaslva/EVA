@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     SUPABASE_JWT_SECRET: str = ""
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     GROQ_API_KEY: str = ""
+    SENTRY_DSN: str = ""
     ENVIRONMENT: str = "development"
     APP_VERSION: str = "1.0.0"
 
