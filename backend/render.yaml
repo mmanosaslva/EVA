@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: eva-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: OLLAMA_BASE_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: VERCEL_URL
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: APP_VERSION
+        value: "1.0.0"
+    disk:
+      name: ml-models
+      mountPath: /opt/render/project/src/ml_models
+      sizeGB: 1
+
+  - type: cron
+    name: ml-retrain
+    env: python
+    schedule: "0 3 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scripts/retrain_models.py
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: ENVIRONMENT
+        value: production

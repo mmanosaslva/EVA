@@ -1,9 +1,10 @@
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import Response
 
+from app.core.rate_limiter import limiter
 from app.core.security import get_current_user
 from app.services import export_service
 
@@ -27,7 +28,9 @@ async def export_csv(
 
 
 @router.get("/pdf")
+@limiter.limit("5/hour")
 async def export_pdf(
+    request: Request,
     cycles_back: int = Query(6, ge=1, le=24),
     current_user: dict = Depends(get_current_user),
 ):
