@@ -41,6 +41,8 @@ app = FastAPI(
 origins = [
     "http://localhost:5173",  # Vite dev server
     "http://localhost:3000",
+    "https://eva-frontend.vercel.app",  # Vercel production
+    "https://*.vercel.app",  # Vercel preview deployments
 ]
 
 app.add_middleware(
