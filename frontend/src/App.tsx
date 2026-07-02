@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import DemoPage from "./pages/DemoPage";
 import CalendarPage from "./pages/CalendarPage";
 import SymptomsPage from "./pages/SymptomsPage";
+import InsightsPage from "./pages/InsightsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
@@ -41,6 +42,14 @@ function AppLayout() {
           element={
             <PrivateRoute>
               <SymptomsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/insights"
+          element={
+            <PrivateRoute>
+              <InsightsPage />
             </PrivateRoute>
           }
         />

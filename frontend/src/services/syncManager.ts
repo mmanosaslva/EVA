@@ -11,7 +11,7 @@ export interface SyncStatusState {
 }
 
 let listeners: SyncStatusCallback[] = [];
-let currentStatus: SyncStatusState = {
+const currentStatus: SyncStatusState = {
   isSyncing: false,
   pendingCount: 0,
   lastSyncResult: null,
