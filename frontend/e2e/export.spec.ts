@@ -1,8 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { mockSupabaseAuth } from "./helpers/auth";
 
-const API_BASE = "http://localhost:8000";
-
 const CSV_MOCK_BODY =
   "Fecha inicio ciclo,Fecha fin ciclo,Duracion (dias),Fecha registro,Nivel flujo,Temperatura,Sintoma,Intensidad,Notas\n" +
   "2025-06-01,2025-06-05,4,2025-06-01,medium,36.5,Dolor abdominal,3,colicos\n" +
