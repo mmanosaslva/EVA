@@ -17,47 +17,69 @@ function mockPdfBuffer() {
   return [...MOCK_PDF_BYTES];
 }
 
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Expose-Headers": "Content-Disposition",
+  };
+}
+
 test.describe("Exportación de datos", () => {
   test.beforeEach(async ({ page }) => {
     await mockSupabaseAuth(page);
 
-    await page.route(`${API_BASE}/export/csv`, (route) => {
-      if (route.request().headers()["authorization"] !== "Bearer test-token") {
+    await page.route(
+      (url) => url.hostname === "localhost" && url.pathname === "/export/csv",
+      (route) => {
+        const auth =
+          route.request().headers()["authorization"] || "";
+        if (auth !== "Bearer test-token") {
+          return route.fulfill({
+            status: 401,
+            contentType: "application/json",
+            headers: corsHeaders(),
+            body: JSON.stringify({ detail: "Token invalido o expirado" }),
+          });
+        }
         return route.fulfill({
-          status: 401,
-          contentType: "application/json",
-          body: JSON.stringify({ detail: "Token invalido o expirado" }),
+          status: 200,
+          contentType: "text/csv; charset=utf-8",
+          headers: {
+            ...corsHeaders(),
+            "Content-Disposition":
+              "attachment; filename=eva_datos_2025-07-01.csv",
+          },
+          body: CSV_MOCK_BODY,
         });
-      }
-      return route.fulfill({
-        status: 200,
-        contentType: "text/csv; charset=utf-8",
-        headers: {
-          "Content-Disposition":
-            "attachment; filename=eva_datos_2025-07-01.csv",
-        },
-        body: CSV_MOCK_BODY,
-      });
-    });
+      },
+    );
 
-    await page.route(`${API_BASE}/export/pdf*`, (route) => {
-      if (route.request().headers()["authorization"] !== "Bearer test-token") {
+    await page.route(
+      (url) =>
+        url.hostname === "localhost" && url.pathname === "/export/pdf",
+      (route) => {
+        const auth =
+          route.request().headers()["authorization"] || "";
+        if (auth !== "Bearer test-token") {
+          return route.fulfill({
+            status: 401,
+            contentType: "application/json",
+            headers: corsHeaders(),
+            body: JSON.stringify({ detail: "Token invalido o expirado" }),
+          });
+        }
         return route.fulfill({
-          status: 401,
-          contentType: "application/json",
-          body: JSON.stringify({ detail: "Token invalido o expirado" }),
+          status: 200,
+          contentType: "application/pdf",
+          headers: {
+            ...corsHeaders(),
+            "Content-Disposition":
+              "attachment; filename=eva_informe_medico_2025-07-01.pdf",
+          },
+          body: Buffer.from(mockPdfBuffer()),
         });
-      }
-      return route.fulfill({
-        status: 200,
-        contentType: "application/pdf",
-        headers: {
-          "Content-Disposition":
-            "attachment; filename=eva_informe_medico_2025-07-01.pdf",
-        },
-        body: Buffer.from(mockPdfBuffer()),
-      });
-    });
+      },
+    );
   });
 
   test("descarga CSV con headers correctos", async ({ page }) => {
