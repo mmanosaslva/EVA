@@ -53,7 +53,7 @@ export default function Dashboard() {
   if (!dashboardData || cycles.length === 0) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <p className="text-5xl mb-4">🌸</p>
+        <p className="text-5xl mb-4" aria-hidden="true">🌸</p>
         <h1 className="text-xl font-bold text-text-primary mb-2">
           Bienvenida a EVA
         </h1>

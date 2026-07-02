@@ -106,7 +106,7 @@ export function PredictionWidget({
     return (
       <Card padding="md" className="bg-surface-alt">
         <div className="flex flex-col items-center text-center py-4">
-          <span className="text-3xl mb-2">🔮</span>
+          <span className="text-3xl mb-2" aria-hidden="true">🔮</span>
           <h3 className="text-sm font-semibold text-text-primary mb-1">
             Predicción del próximo período
           </h3>
@@ -146,14 +146,14 @@ export function PredictionWidget({
 
         <div className="w-full max-w-xs space-y-1.5 text-xs text-text-secondary mb-3">
           <div className="flex items-center justify-center gap-2">
-            <span className="text-text-muted">📅</span>
+            <span className="text-text-muted" aria-hidden="true">📅</span>
             <span>
               Estimado: <strong className="text-text-primary">{formatDateFull(predictedDate)}</strong>
             </span>
           </div>
 
           <div className="flex items-center justify-center gap-2">
-            <span className="text-text-muted">🎯</span>
+            <span className="text-text-muted" aria-hidden="true">🎯</span>
             <span>
               Entre el{" "}
               <strong className="text-text-primary">{formatDateShort(confidenceEarly)}</strong>
@@ -164,7 +164,7 @@ export function PredictionWidget({
           </div>
 
           <div className="flex items-center justify-center gap-2">
-            <span className="text-text-muted">🌸</span>
+            <span className="text-text-muted" aria-hidden="true">🌸</span>
             <span>
               Ventana fértil estimada:{" "}
               <strong className="text-text-primary">{formatDateShort(fertileStart)}</strong>

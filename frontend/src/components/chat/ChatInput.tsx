@@ -35,6 +35,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         onKeyDown={handleKeyDown}
         placeholder="Pregúntale algo a EVA sobre tu ciclo..."
         disabled={disabled}
+        aria-label="Pregunta sobre tu ciclo"
         className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-text-primary placeholder:text-text-muted resize-none focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-eva-400/30 disabled:opacity-50"
         style={{ maxHeight: "120px" }}
         onInput={(e) => {
@@ -47,6 +48,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         onClick={handleSend}
         disabled={disabled || !text.trim()}
         className="shrink-0 rounded-xl px-4 py-3"
+        aria-label="Enviar mensaje"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
