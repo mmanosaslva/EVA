@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
+from app.core.rate_limiter import limiter
 from app.core.security import get_current_user
 from app.models.insight import (
     InsightRequest,
@@ -14,7 +15,9 @@ router = APIRouter(prefix="/insights", tags=["insights"])
 
 
 @router.post("", response_model=InsightResponse)
+@limiter.limit("20/hour")
 async def create_insight(
+    request: Request,
     body: InsightRequest,
     current_user: dict = Depends(get_current_user),
 ):

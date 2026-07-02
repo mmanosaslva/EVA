@@ -1,8 +1,14 @@
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 from app.core.config import settings
+from app.core.rate_limiter import limiter
+from app.core.security_middleware import SecurityHeadersMiddleware
 from app.routers import health, cycles, symptoms, analytics, predictions, sync, insights, export
+
 
 if settings.SENTRY_DSN:
     sentry_sdk.init(
@@ -36,12 +42,17 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS: permite requests desde el frontend local (Sprint 1)
-# En producción se reemplaza por el dominio de Vercel
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 origins = [
-    "http://localhost:5173",  # Vite dev server
+    "http://localhost:5173",
     "http://localhost:3000",
 ]
+if settings.VERCEL_URL:
+    origins.append(f"https://{settings.VERCEL_URL}")
 
 app.add_middleware(
     CORSMiddleware,
