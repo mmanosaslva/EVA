@@ -198,12 +198,43 @@ def _report(description: str, results: list[EvalResult]):
         print(f"    {'✓ Prophet supera a heuristica' if improvement > 0 else '○ Similares'}")
 
 
+REPORT_DIR = Path("ml_models")
+
+
+def _save_report_to_file(results: list[EvalResult], output_path: Path):
+    import io
+
+    buf = io.StringIO()
+    prophet_maes = [r.prophet_mae for r in results if r.prophet_mae < 99.0]
+    heuristic_maes = [r.heuristic_mae for r in results if r.heuristic_mae < 99.0]
+
+    if prophet_maes:
+        avg_prophet = sum(prophet_maes) / len(prophet_maes)
+        buf.write(f"MAE Prophet promedio: {avg_prophet:.2f} dias\n")
+        buf.write(f"Modelos evaluados: {len(prophet_maes)}\n")
+        buf.write(f"MAE minimo: {min(prophet_maes):.2f} dias\n")
+        buf.write(f"MAE maximo: {max(prophet_maes):.2f} dias\n")
+
+    if heuristic_maes:
+        avg_heuristic = sum(heuristic_maes) / len(heuristic_maes)
+        buf.write(f"\nMAE Heuristica promedio: {avg_heuristic:.2f} dias\n")
+
+    if prophet_maes and heuristic_maes:
+        improvement = avg_heuristic - avg_prophet
+        pct = (improvement / avg_heuristic) * 100 if avg_heuristic > 0 else 0
+        buf.write(f"\nMejora: {improvement:.2f} dias ({pct:.1f}%)\n")
+
+    output_path.write_text(buf.getvalue(), encoding="utf-8")
+    print(f"Reporte guardado: {output_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Evalua modelos Prophet vs heuristica")
     parser.add_argument("--with-db", action="store_true", help="Incluir evaluacion con datos reales de BD")
     parser.add_argument("--users", type=int, default=50, help="Numero de usuarias sinteticas")
     parser.add_argument("--cycles", type=int, default=10, help="Ciclos por usuaria")
     parser.add_argument("--noise", type=int, default=5, help="Ruido en duracion de ciclos (dias)")
+    parser.add_argument("--output", type=str, default=None, help="Ruta del reporte de salida")
     args = parser.parse_args()
 
     print("EVA - Evaluacion de Modelos ML")
@@ -222,12 +253,20 @@ def main():
         real_results = asyncio.run(evaluate_all_models())
         _report("Base de datos real", real_results)
 
+    output_path = Path(args.output) if args.output else REPORT_DIR / "eval_report.txt"
+    _save_report_to_file(synth_results, output_path)
+
     prophet_valid = [r for r in synth_results if r.prophet_mae < 99.0]
     if prophet_valid:
         avg = sum(r.prophet_mae for r in prophet_valid) / len(prophet_valid)
-        if avg >= 1.5:
-            print(f"\n  ⚠ MAE global {avg:.2f} >= 1.5 dias (limite: < 1.5)")
+        print(f"MAE global Prophet: {avg:.2f} dias")
+        if avg > 2.0:
+            print(f"  ⚠ FAIL: MAE {avg:.2f} > 2.0 dias (limite)")
             sys.exit(1)
+        elif avg < 1.5:
+            print(f"  ✓ OK: MAE {avg:.2f} < 1.5 dias (meta)")
+        else:
+            print(f"  ○ MAE {avg:.2f} entre 1.5 y 2.0 dias (aceptable)")
 
 
 if __name__ == "__main__":

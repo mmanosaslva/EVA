@@ -30,4 +30,10 @@ jobs:
 
       - name: Run ML evaluation (synthetic)
         run: |
-          python backend/scripts/evaluate_models.py --users 50 --cycles 10 --noise 5
+          python backend/scripts/evaluate_models.py --users 50 --cycles 10 --noise 5 --output eval_report.txt
+
+      - name: Upload evaluation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ml-evaluation-report
+          path: eval_report.txt
