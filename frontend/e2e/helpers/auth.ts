@@ -1,6 +1,31 @@
+import { readFileSync, existsSync } from "fs";
+import { resolve } from "path";
 import type { Page } from "@playwright/test";
 
-const PROJECT_REF = "nrvkuofqbzvrciyvhgbs";
+function getSupabaseProjectRef(): string {
+  // 1. Intentar desde variable de entorno
+  if (process.env.VITE_SUPABASE_URL) {
+    const match = process.env.VITE_SUPABASE_URL.match(/https:\/\/([^.]+)\.supabase\.co/);
+    if (match) return match[1];
+  }
+
+  // 2. Leer desde .env (Playwright corre desde frontend/)
+  const envPath = resolve(process.cwd(), ".env");
+  if (existsSync(envPath)) {
+    const content = readFileSync(envPath, "utf-8");
+    const match = content.match(/^VITE_SUPABASE_URL=(.+)$/m);
+    if (match) {
+      const url = match[1].trim();
+      const refMatch = url.match(/https:\/\/([^.]+)\.supabase\.co/);
+      if (refMatch) return refMatch[1];
+    }
+  }
+
+  // 3. Fallback para CI
+  return "nrvkuofqbzvrciyvhgbs";
+}
+
+const PROJECT_REF = getSupabaseProjectRef();
 
 function makeMockSession() {
   const now = Math.floor(Date.now() / 1000);
@@ -37,6 +62,20 @@ export async function mockSupabaseAuth(page: Page) {
     const { key, session: sessionData } = args;
     localStorage.setItem(key, JSON.stringify(sessionData));
   }, { key: storageKey, session });
+
+  // Respaldo: interceptar llamadas de verificación de sesión de Supabase
+  await page.route("**/auth/v1/user", async (route) => {
+    const authHeader = route.request().headers()["authorization"];
+    if (authHeader?.startsWith("Bearer ")) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(session.user),
+      });
+    } else {
+      await route.fulfill({ status: 401 });
+    }
+  });
 }
 
 export async function clearSupabaseAuth(page: Page) {
