@@ -1488,15 +1488,218 @@ para identificar problemas de conexión o carga en el servidor de Render.
 
 ---
 
-## Resumen de criterios por developer
+---
 
-| Developer | Issues con criterios | Total de criterios (checkboxes) |
+## Sprint 10 — Conexiones BD → Backend → Frontend
+
+> Sprint final de integración: reemplazar todos los datos mock por llamadas reales a la API,
+> corregir tests E2E, activar ML Prophet, y preparar el deploy a producción.
+
+---
+
+### Issue #80 — [S10] Reemplazar datos mock en cycleService por llamadas reales
+**Asignado:** Madeleine | **Labels:** `frontend` `api`
+
+```
+## Descripción
+cycleService.ts usa un array MOCK_CYCLES en memoria y nunca llama a la API real.
+
+## Criterios de aceptación
+- [ ] `getCycles()` obtiene ciclos desde GET /cycles via apiClient
+- [ ] `createCycle()` envía POST /cycles via apiClient (guarda en IndexedDB como offline fallback)
+- [ ] `updateCycle()` envía PUT /cycles/{id} via apiClient
+- [ ] `MOCK_CYCLES` eliminado del código
+- [ ] Los simulated delays (setTimeout) eliminados
+- [ ] Fallback a IndexedDB cuando hay error de red (offline)
+```
+
+---
+
+### Issue #81 — [S10] Reemplazar datos mock en symptomService por llamadas reales
+**Asignado:** Madeleine | **Labels:** `frontend` `api`
+
+```
+## Descripción
+symptomService.ts usa MOCK_SYMPTOMS y MOCK_LOGS en memoria, nunca llama a la API.
+
+## Criterios de aceptación
+- [ ] `getSymptomsCatalog()` obtiene catálogo desde GET /symptoms/catalog via apiClient
+- [ ] `getDailyLogsByCycle()` obtiene logs desde GET /cycles/{id}/daily-logs via apiClient
+- [ ] `createDailyLog()` envía POST /daily-logs via apiClient
+- [ ] `updateDailyLog()` envía PUT /daily-logs/{id} via apiClient
+- [ ] `MOCK_SYMPTOMS` y `MOCK_LOGS` eliminados
+- [ ] Simulated delays (setTimeout) eliminados
+```
+
+---
+
+### Issue #82 — [S10] Reemplazar datos mock en insightService y exportService
+**Asignado:** Madeleine | **Labels:** `frontend` `api`
+
+```
+## Descripción
+insightService.ts usa keyword-matching mock en vez de llamar al LLM real.
+exportService.ts genera CSV/PDF falsos en vez de llamar a los endpoints reales.
+
+## Criterios de aceptación
+- [ ] `postInsight()` envía POST /insights via apiClient con la pregunta real
+- [ ] `getInsightsHistory()` obtiene historial desde GET /insights/history via apiClient
+- [ ] `generateMockResponse()` y `MOCK_HISTORY` eliminados
+- [ ] `downloadCSV()` obtiene el CSV desde GET /export/csv via apiClient
+- [ ] `downloadPDF()` obtiene el PDF desde GET /export/pdf via apiClient
+- [ ] `generateMockCsv()` y el string "fake pdf content" eliminados
+- [ ] Los downloads usan Blob + URL.createObjectURL para trigger real de descarga
+```
+
+---
+
+### Issue #83 — [S10] Reemplazar mock analytics por API real
+**Asignado:** Madeleine | **Labels:** `frontend` `api`
+
+```
+## Descripción
+symptomAnalytics.ts tiene getMockSymptomStats() que retorna estadísticas hardcodeadas.
+
+## Criterios de aceptación
+- [ ] `getMockSymptomStats()` reemplazado por llamada a GET /analytics/symptoms via apiClient
+- [ ] SymptomFrequencyChart.tsx usa datos reales de la API
+- [ ] dashboardUtils.ts retorna prediction_source "prophet" cuando el modelo existe
+- [ ] Archivo `lib/symptomAnalytics.ts` eliminado si ya no se usa
+```
+
+---
+
+### Issue #84 — [S10] Corregir tests E2E: selectores y lógica
+**Asignado:** Daniel | **Labels:** `testing` `frontend`
+
+```
+## Descripción
+Los tests E2E tienen selectores incorrectos que nunca matchean, causando 15+ fallos en CI.
+
+## Criterios de aceptación
+- [ ] `login.spec.ts` — selector de heading cambiado a `/eva|inicia sesión/i` (LoginPage tiene h1="EVA")
+- [ ] `offline.spec.ts` — selector /panel/ cambiado a `/eva|dashboard|panel/i` (Dashboard h1="EVA")
+- [ ] `symptom-flow.spec.ts` — getByRole("tab") cambiado a getByRole("button") (los tabs son botones)
+- [ ] `regression.spec.ts` — getByRole("tab") cambiado a getByRole("button")
+- [ ] `login.spec.ts` — regex /registrate/ cambiado a /regístrate/ (con acento)
+- [ ] `symptom-flow.spec.ts` — /moderad/ cambiado a /medio/
+- [ ] `regression.spec.ts` — selector de botón SVG cambiado a getByRole("button", { name: /enviar/i }) con aria-label
+- [ ] `offline.spec.ts` — test "crea ciclo offline" renombrado o implementado correctamente
+- [ ] Todos los tests pasan localmente con `npx playwright test`
+```
+
+---
+
+### Issue #85 — [S10] Re-escribir export.spec.ts para frontend (no backend)
+**Asignado:** Daniel | **Labels:** `testing` `frontend`
+
+```
+## Descripción
+export.spec.ts llama directamente a http://localhost:8000 (backend) que no existe en CI.
+
+## Criterios de aceptación
+- [ ] Tests refactorizados para usar page.route() y mockear respuestas del backend
+- [ ] Tests verifican que los botones de exportación están presentes en ExportPage
+- [ ] Tests verifican que downloadCSV() y downloadPDF() son llamados
+- [ ] URL http://localhost:8000 eliminada del test
+- [ ] Tests pasan en CI sin backend corriendo
+```
+
+---
+
+### Issue #86 — [S10] CORS: dominio Vercel + wildcard
+**Asignado:** Meriyei | **Labels:** `backend` `devops`
+
+```
+## Descripción
+CORS en main.py tiene "https://*.vercel.app" que no funciona con allow_origins (no soporta globs).
+
+## Criterios de aceptación
+- [ ] Wildcard reemplazado por el dominio exacto de Vercel (ej: "https://eva-xi-nine.vercel.app")
+- [ ] O usar allow_origin_regex=["https://.*\.vercel\.app"] si se quiere flexibilidad
+- [ ] Puerto 3000 de preview Vercel también incluido
+- [ ] Verificar con curl que el header Access-Control-Allow-Origin es correcto
+```
+
+---
+
+### Issue #87 — [S10] Activar Prophet: upsert_ml_model + fallback logging
+**Asignado:** Joshua | **Labels:** `ml` `backend`
+
+```
+## Descripción
+El modelo Prophet nunca se activa porque upsert_ml_model() nunca es llamado desde ml_service.py.
+Además prediction_service.py traga errores con except Exception: pass sin logging.
+
+## Criterios de aceptación
+- [ ] ml_service.train_model() llama a upsert_ml_model() después de entrenar
+- [ ] prediction_service.get_next_prediction() hace logging de errores de ML (no solo pass)
+- [ ] get_ml_model() encuentra modelos existentes y Prophet se activa
+- [ ] response incluye prediction_source: "prophet" cuando corresponde
+- [ ] MAE tests pasan con Prophet activo
+```
+
+---
+
+### Issue #88 — [S10] Seguridad: env vars, logging, y dead code
+**Asignado:** Meriyei | **Labels:** `backend` `security`
+
+```
+## Descripción
+Config.py no valida env vars críticas, hay dead code en repos, y router de insights bypassa service layer.
+
+## Criterios de aceptación
+- [ ] config.py agrega validación: si DATABASE_URL está vacío, raise error al iniciar
+- [ ] config.py agrega validación: si SUPABASE_JWT_SECRET está vacío, raise error
+- [ ] llm_service.py mueve OLLAMA_MODEL y GROQ_MODEL a Settings
+- [ ] llm_service.py y prediction_service.py agregan logging en except en vez de return None
+- [ ] insights.py router mueve save_insight() a insight_service.py (no llamar repo directo)
+- [ ] Remove dead code: remove_symptoms_from_log(), get_cycles_with_features() (si no se usa)
+```
+
+---
+
+### Issue #89 — [S10] UI: Demo pública + delete account + limpieza
+**Asignado:** Daniel | **Labels:** `frontend`
+
+```
+## Descripción
+DemoPage está tras PrivateRoute (debería ser pública). ExportPage no llama a API para borrar cuenta.
+
+## Criterios de aceptación
+- [ ] DemoPage.tsx movida fuera de PrivateRoute en App.tsx
+- [ ] ExportPage.handleDeleteConfirm() llama a DELETE /account via apiClient
+- [ ] Issue reference comments eliminados de Dashboard.tsx (#30, #51, #25, #26)
+- [ ] Archivo duplicado lib/supabase.ts eliminado (usar solo supabaseClient.ts)
+- [ ] Verificar que ningún import roto apunte a supabase.ts
+```
+
+---
+
+### Issue #90 — [S10] ML: Module-level side effects + evaluación
+**Asignado:** Joshua | **Labels:** `ml` `backend`
+
+```
+## Descripción
+ml_service.py tiene MODELS_DIR.mkdir() al importarse (puede romper en entornos read-only).
+
+## Criterios de aceptación
+- [ ] mkdir() movido dentro de train_model() o dentro de una función init_ml()
+- [ ] scripts/evaluate_models.py corre sin errores con el dataset sintético
+- [ ] MAE global < 1.5 días con dataset sintético
+- [ ] Reporte de evaluación guardado como artifact en CI/CD
+```
+
+---
+
+## Resumen de criterios por developer (actualizado)
+
+| Developer | Issues Sprint 10 | Total issues |
 |---|---|---|
-| Daniel | 22 issues | ~110 checkboxes |
-| Meriyei | 19 issues | ~100 checkboxes |
-| Madeleine | 13 issues | ~65 checkboxes |
-| Joshua | 8 issues | ~40 checkboxes |
-| **Total** | **62 issues** | **~315 checkboxes** |
+| Madeleine | #80, #81, #82, #83 | **17 total** |
+| Daniel | #84, #85, #89 | **25 total** |
+| Meriyei | #86, #88 | **21 total** |
+| Joshua | #87, #90 | **10 total** |
 
 ---
 
