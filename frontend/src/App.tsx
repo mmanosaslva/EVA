@@ -8,6 +8,7 @@ import DemoPage from "./pages/DemoPage";
 import CalendarPage from "./pages/CalendarPage";
 import SymptomsPage from "./pages/SymptomsPage";
 import InsightsPage from "./pages/InsightsPage";
+import ExportPage from "./pages/ExportPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
@@ -50,6 +51,14 @@ function AppLayout() {
           element={
             <PrivateRoute>
               <InsightsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/export"
+          element={
+            <PrivateRoute>
+              <ExportPage />
             </PrivateRoute>
           }
         />
