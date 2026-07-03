@@ -15,8 +15,11 @@ if settings.SENTRY_DSN:
         dsn=settings.SENTRY_DSN,
         environment=settings.ENVIRONMENT,
         traces_sample_rate=0.1,
+        send_default_pii=False,
         before_send=lambda event, hint: _scrub_sentry_event(event),
     )
+
+_SENSITIVE_ENDPOINTS = ("/daily-logs", "/cycles", "/insights")
 
 
 def _scrub_sentry_event(event: dict) -> dict:
@@ -26,6 +29,10 @@ def _scrub_sentry_event(event: dict) -> dict:
             headers["authorization"] = "[FILTERED]"
         if "cookie" in headers:
             headers["cookie"] = "[FILTERED]"
+        url = event["request"].get("url", "")
+        if any(ep in url for ep in _SENSITIVE_ENDPOINTS):
+            event["request"].pop("data", None)
+            event["request"].pop("json", None)
     if "extra" in event:
         for key in ("email", "user_id", "token", "password", "birth_date"):
             event["extra"].pop(key, None)
@@ -47,18 +54,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(SecurityHeadersMiddleware)
 
-origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://eva-frontend.vercel.app",  # Vercel production
-    "https://*.vercel.app",  # Vercel preview deployments
-]
-if settings.VERCEL_URL:
-    origins.append(f"https://{settings.VERCEL_URL}")
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
