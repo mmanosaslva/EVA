@@ -20,10 +20,16 @@ from app.repositories.symptom_repo import (
     remove_all_symptoms_from_log,
 )
 
+_catalog_cache: list[dict] | None = None
+
 
 async def list_symptoms() -> list[dict]:
-    rows = await get_all_symptoms()
-    return [_symptom_catalog_to_dict(r) for r in rows]
+    global _catalog_cache
+    if _catalog_cache is None:
+        rows = await get_all_symptoms()
+        _catalog_cache = [_symptom_catalog_to_dict(r) for r in rows]
+        _catalog_cache.sort(key=lambda s: (s["category"], s["name"]))
+    return _catalog_cache
 
 
 async def get_symptom(symptom_id: int) -> dict:
