@@ -309,6 +309,56 @@ class TestResponseTime:
         assert "reemplaza" in source or "EVA no reemplaza" in source
 
 
+class TestGroqFallback:
+    """Tests explícitos del fallback Groq según GROQ_API_KEY."""
+
+    @patch("app.services.llm_service.settings")
+    async def test_groq_skipped_when_key_empty(self, mock_settings):
+        mock_settings.GROQ_API_KEY = ""
+        result = await _call_groq("test prompt")
+        assert result is None
+
+    @patch("app.services.llm_service.settings")
+    async def test_groq_skipped_when_key_none(self, mock_settings):
+        mock_settings.GROQ_API_KEY = None
+        result = await _call_groq("test prompt")
+        assert result is None
+
+    @patch("app.services.llm_service.httpx.AsyncClient")
+    @patch("app.services.llm_service.settings")
+    async def test_groq_called_when_key_exists(self, mock_settings, mock_client):
+        mock_settings.GROQ_API_KEY = "gsk_test_key_123"
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": "respuesta groq"}}]
+        }
+        mock_instance = AsyncMock()
+        mock_instance.post = AsyncMock(return_value=mock_response)
+        mock_client.return_value.__aenter__.return_value = mock_instance
+        result = await _call_groq("test prompt")
+        assert result == "respuesta groq"
+        mock_instance.post.assert_called_once()
+
+    @patch("app.services.llm_service._call_ollama")
+    @patch("app.services.llm_service._call_groq")
+    async def test_groq_called_when_ollama_fails_and_key_exists(self, mock_groq, mock_ollama):
+        mock_ollama.return_value = None
+        mock_groq.return_value = "respuesta groq"
+        result = await get_insight("test", {"fase_actual": "lutea"})
+        assert result["source"].startswith("groq")
+        mock_groq.assert_called_once()
+
+    @patch("app.services.llm_service._call_ollama")
+    @patch("app.services.llm_service._call_groq")
+    async def test_runtime_error_when_ollama_fails_and_no_groq_key(self, mock_groq, mock_ollama):
+        mock_ollama.return_value = None
+        mock_groq.return_value = None
+        with pytest.raises(RuntimeError, match="LLM service unavailable"):
+            await get_insight("test", {"fase_actual": "lutea"})
+
+
 class TestBuildCycleContextComplete:
     """Verifica que todos los campos requeridos están presentes."""
 

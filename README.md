@@ -109,8 +109,8 @@ cd backend && pytest -v
 # Frontend
 cd frontend && npm run test
 
-# E2E
-cd frontend && npx playwright test
+# E2E (SUSPENDIDO — issues #27, #38, #52, #55)
+# cd frontend && npx playwright test
 ```
 
 ---
