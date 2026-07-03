@@ -120,6 +120,8 @@ Crear y configurar el proyecto en Supabase con la base de datos y autenticación
 - [ ] Seed de síntomas ejecutado: `SELECT count(*) FROM symptoms_catalog` → retorna 30
 - [ ] Conexión PostgreSQL verificada desde FastAPI: `asyncpg` o `psycopg2` conecta sin error
 - [ ] Row Level Security (RLS) activado en todas las tablas
+- [ ] SMTP custom configurado en Supabase Dashboard, correos de confirmación llegan correctamente
+- [ ] Trigger de limpieza en DELETE de `auth.users` implementado y probado (borra fila huérfana en `public.users`)
 
 ## Notas técnicas
 Las credenciales reales NUNCA van al repositorio. Usar GitHub Secrets para CI/CD.

@@ -26,6 +26,8 @@
     - [3.8 sync\_operations](#38-sync_operations)
   - [4. Índices](#4-índices)
   - [5. Script SQL completo](#5-script-sql-completo)
+    - [5.1 Fix: handle\_new\_user con protección contra duplicados](#51-fix-handle_new_user-con-protección-contra-duplicados)
+    - [5.2 Trigger de limpieza: borrar public\.users al borrar auth\.users](#52-trigger-de-limpieza-borrar-publicusers-al-borrar-authusers)
   - [6. Seed de síntomas](#6-seed-de-síntomas)
   - [7. Migraciones con Alembic](#7-migraciones-con-alembic)
     - [Setup inicial](#setup-inicial)
@@ -490,6 +492,104 @@ CREATE TRIGGER trg_daily_logs_updated_at
     BEFORE UPDATE ON daily_logs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 ```
+
+### 5.1 Fix: handle_new_user con protección contra duplicados
+
+**Problema:** el trigger original usa `ON CONFLICT (id) DO NOTHING`. Si un usuario
+se borra manualmente de `auth.users` (dashboard), la fila huérfana en `public.users`
+queda. Un signup con el mismo email viola `UNIQUE(email)` y devuelve 500.
+
+**Fix:** cambiar a `ON CONFLICT (email) DO UPDATE` para re-vincular la fila huérfana.
+
+Ejecutar en SQL Editor **después** del schema base:
+
+```sql
+-- ============================================================
+-- FIX: handle_new_user — protección contra duplicados
+-- Problema: DELETE manual de auth.users → fila huérfana en
+-- public.users → re-signup → UNIQUE(email) violado → 500
+-- ============================================================
+
+-- Reemplazar la función existente con ON CONFLICT (email)
+CREATE OR REPLACE FUNCTION app_hidden.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = 'public'
+AS $$
+BEGIN
+    INSERT INTO public.users (id, email, created_at, updated_at)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (email) DO UPDATE
+        SET id = EXCLUDED.id,
+            updated_at = NOW();
+    RETURN NEW;
+END;
+$$;
+```
+
+**Comportamiento resultante:**
+- Email nuevo → INSERT normal
+- Email existente (fila huérfana) → UPDATE id para re-vincular con el nuevo `auth.users`
+- Nunca viola UNIQUE constraint → nunca devuelve 500
+
+### 5.2 Trigger de limpieza: borrar `public.users` al borrar `auth.users`
+
+**Problema:** borrar un usuario desde el dashboard de Supabase (Authentication → Users)
+elimina la fila de `auth.users` pero deja la fila huérfana en `public.users`.
+
+**Fix:** trigger `AFTER DELETE` en `auth.users` que borra la fila correspondiente.
+
+Ejecutar en SQL Editor **después** del fix 5.1:
+
+```sql
+-- ============================================================
+-- TRIGGER: limpieza en DELETE de auth.users
+-- Borra la fila correspondiente en public.users para evitar
+-- datos huérfanos cuando se elimina un usuario desde el dashboard.
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION app_hidden.handle_user_delete()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = 'public'
+AS $$
+BEGIN
+    DELETE FROM public.users WHERE id = OLD.id;
+    RETURN OLD;
+END;
+$$;
+
+-- Recrear trigger de DELETE (DROP + CREATE porque PostgreSQL
+-- no soporta CREATE OR REPLACE TRIGGER)
+DO $mig$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_trigger
+        WHERE tgname = 'on_auth_user_deleted'
+          AND tgrelid = 'auth.users'::regclass
+    ) THEN
+        DROP TRIGGER IF EXISTS on_auth_user_deleted ON auth.users;
+    END IF;
+
+    CREATE TRIGGER on_auth_user_deleted
+        AFTER DELETE ON auth.users
+        FOR EACH ROW
+        EXECUTE FUNCTION app_hidden.handle_user_delete();
+END;
+$mig$;
+```
+
+**Comportamiento resultante:**
+- Borrar usuario desde dashboard → `auth.users` se elimina → trigger borra `public.users`
+- CASCADE en `cycles`, `daily_logs`, etc. limpia las tablas dependientes
+- No quedan filas huérfanas en ninguna tabla
 
 ---
 
