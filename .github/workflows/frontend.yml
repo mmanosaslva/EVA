@@ -55,23 +55,25 @@ jobs:
         run: npm run build
         working-directory: frontend
 
-      - name: Install Playwright browsers
-        if: steps.check.outputs.exists == 'true'
-        run: npx playwright install chromium
-        working-directory: frontend
-
-      - name: Run E2E tests
-        if: steps.check.outputs.exists == 'true'
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: npm run test:e2e
-        working-directory: frontend
-
-      - name: Upload E2E report
-        if: always() && steps.check.outputs.exists == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-report
-          path: frontend/e2e-report/
-          retention-days: 7
+      # E2E (Playwright) — SUSPENDIDO temporalmente (issues #27, #38, #52, #55)
+      # No reactiver hasta tener deploy a Vercel + Render.
+      # - name: Install Playwright browsers
+      #   if: steps.check.outputs.exists == 'true'
+      #   run: npx playwright install chromium
+      #   working-directory: frontend
+      #
+      # - name: Run E2E tests
+      #   if: steps.check.outputs.exists == 'true'
+      #   env:
+      #     VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      #     VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      #   run: npm run test:e2e
+      #   working-directory: frontend
+      #
+      # - name: Upload E2E report
+      #   if: always() && steps.check.outputs.exists == 'true'
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: e2e-report
+      #     path: frontend/e2e-report/
+      #     retention-days: 7
