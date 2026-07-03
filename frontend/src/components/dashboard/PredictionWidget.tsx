@@ -56,12 +56,12 @@ function ConfidenceBar({
         <span className="text-[10px] text-text-muted w-14 text-right">
           {formatDateShort(early)}
         </span>
-        <div className="relative flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+        <div className="relative flex-1 h-1.5 rounded-full bg-surface-container-low overflow-hidden">
           <div
-            className="absolute inset-0 rounded-full bg-lavender-100"
+            className="absolute inset-0 rounded-full bg-secondary-fixed-dim"
           />
           <div
-            className="absolute top-0 h-full rounded-full bg-lavender-400"
+            className="absolute top-0 h-full rounded-full bg-secondary-container"
             style={{ left: `${predictedPct - 2}%`, width: "4%" }}
           />
         </div>
@@ -132,7 +132,7 @@ export function PredictionWidget({
         </span>
 
         <div className="mb-2">
-          <span className="text-4xl font-bold text-eva-600 leading-tight">
+          <span className="text-4xl font-bold text-primary leading-tight">
             {daysUntilNext === 0 ? "Hoy" : daysUntilNext}
           </span>
           {daysUntilNext > 0 && (
@@ -204,7 +204,7 @@ export function PredictionWidget({
           )}
 
           {showMotivational && (
-            <p className="text-[11px] text-lavender-600 font-medium mt-1">
+            <p className="text-[11px] text-secondary font-medium mt-1">
               La precisión con IA se activa al registrar 3 ciclos. Llevás {totalCycles} de 3.
             </p>
           )}

@@ -1,8 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { PrivateRoute } from "./components/auth/PrivateRoute";
-import { useOnlineStatus } from "./hooks/useOnlineStatus";
-import { OfflineIndicator } from "./components/ui/OfflineIndicator";
-import { PwaInstallBanner } from "./components/ui/PwaInstallBanner";
+import { ShellLayout } from "./components/layout/ShellLayout";
 import Dashboard from "./pages/Dashboard";
 import DemoPage from "./pages/DemoPage";
 import CalendarPage from "./pages/CalendarPage";
@@ -12,74 +10,28 @@ import ExportPage from "./pages/ExportPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
-function AppLayout() {
-  const { isOnline, wasOffline } = useOnlineStatus();
-
+function App() {
   return (
-    <>
-      <OfflineIndicator isOnline={isOnline} wasOffline={wasOffline} />
-      <PwaInstallBanner />
+    <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route
-          path="/dashboard"
           element={
             <PrivateRoute>
-              <Dashboard />
+              <ShellLayout />
             </PrivateRoute>
           }
-        />
-        <Route
-          path="/calendar"
-          element={
-            <PrivateRoute>
-              <CalendarPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/symptoms"
-          element={
-            <PrivateRoute>
-              <SymptomsPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/insights"
-          element={
-            <PrivateRoute>
-              <InsightsPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/export"
-          element={
-            <PrivateRoute>
-              <ExportPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/demo"
-          element={
-            <PrivateRoute>
-              <DemoPage />
-            </PrivateRoute>
-          }
-        />
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/symptoms" element={<SymptomsPage />} />
+          <Route path="/insights" element={<InsightsPage />} />
+          <Route path="/export" element={<ExportPage />} />
+          <Route path="/demo" element={<DemoPage />} />
+        </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-    </>
-  );
-}
-
-function App() {
-  return (
-    <BrowserRouter>
-      <AppLayout />
     </BrowserRouter>
   );
 }

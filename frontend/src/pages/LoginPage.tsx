@@ -26,11 +26,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-alt px-4">
+    <div className="flex min-h-screen items-center justify-center bg-surface px-4">
       <Card padding="lg" className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-eva-600">EVA</h1>
-          <p className="mt-1 text-sm text-text-muted">
+          <h1 className="text-headline-lg text-primary">EVA</h1>
+          <p className="mt-1 text-body-sm text-text-muted">
             Inicia sesión para continuar
           </p>
         </div>
@@ -63,7 +63,7 @@ export default function LoginPage() {
           />
 
           {authError && (
-            <p className="text-sm text-red-500" role="alert">
+            <p className="text-body-sm text-error" role="alert">
               {authError}
             </p>
           )}
@@ -80,9 +80,9 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-text-muted">
+        <p className="mt-4 text-center text-body-sm text-text-muted">
           ¿No tienes cuenta?{" "}
-          <Link to="/register" className="text-eva-600 hover:text-eva-700 font-medium">
+          <Link to="/register" className="text-primary hover:text-primary-fixed-variant font-medium">
             Regístrate
           </Link>
         </p>

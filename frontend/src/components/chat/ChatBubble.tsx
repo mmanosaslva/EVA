@@ -19,16 +19,16 @@ export function ChatBubble({ message }: ChatBubbleProps) {
       className={`flex ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-body-sm ${
           isUser
-            ? "bg-eva-500 text-white rounded-br-md"
-            : "bg-gray-100 text-text-primary rounded-bl-md"
+            ? "bg-primary text-on-primary rounded-br-md"
+            : "bg-surface-container-low text-text-main rounded-bl-md"
         }`}
       >
         <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
         <p
-          className={`text-[11px] mt-1 ${
-            isUser ? "text-eva-100" : "text-text-muted"
+          className={`text-label-md mt-1 ${
+            isUser ? "text-primary-fixed-dim" : "text-text-muted"
           }`}
         >
           {formatTime(message.timestamp)}

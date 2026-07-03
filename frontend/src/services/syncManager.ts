@@ -1,6 +1,8 @@
 import { supabase } from "../lib/supabaseClient";
 import { peekAll, dequeue, queueLength, markCycleSynced, markLogSynced } from "../db";
 
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
 type SyncStatusCallback = (status: SyncStatusState) => void;
 
 export interface SyncStatusState {
@@ -97,7 +99,7 @@ export async function processSyncQueue(): Promise<void> {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const response = await fetch("http://localhost:8000/sync", {
+    const response = await fetch(`${API_BASE}/sync`, {
       method: "POST",
       headers,
       body: JSON.stringify({ operations: syncOps }),

@@ -30,7 +30,7 @@ function CycleRow({ cycle, isLast }: { cycle: Cycle; isLast: boolean }) {
       <div className="flex items-center gap-3">
         <div
           className={`h-2 w-2 rounded-full ${
-            isActive ? "bg-eva-400" : "bg-gray-300"
+            isActive ? "bg-primary-fixed-dim" : "bg-surface-container-highest"
           }`}
         />
         <span className="text-sm text-text-primary">

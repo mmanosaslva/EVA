@@ -107,6 +107,7 @@ export interface Cycle {
   end_date: string | null;
   duration_days: number;
   created_at: string;
+  updated_at: string;
 }
 
 export interface CyclesResponse {
@@ -137,7 +138,7 @@ export interface DailySymptom {
 export interface DailyLog {
   id: string;
   date: string;
-  flow_level: "none" | "light" | "medium" | "heavy";
+  flow_level: string | null;
   temperature: number | null;
   notes: string | null;
   symptoms: DailySymptom[];

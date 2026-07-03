@@ -36,7 +36,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         placeholder="Pregúntale algo a EVA sobre tu ciclo..."
         disabled={disabled}
         aria-label="Pregunta sobre tu ciclo"
-        className="flex-1 rounded-xl border border-border px-4 py-3 text-sm text-text-primary placeholder:text-text-muted resize-none focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-eva-400/30 disabled:opacity-50"
+        className="flex-1 rounded-xl border border-border px-4 py-3 text-body-sm text-text-main placeholder:text-text-muted resize-none focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim/30 disabled:opacity-50"
         style={{ maxHeight: "120px" }}
         onInput={(e) => {
           const el = e.currentTarget;

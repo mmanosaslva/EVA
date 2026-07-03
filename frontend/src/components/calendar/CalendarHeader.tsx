@@ -18,7 +18,7 @@ export function CalendarHeader({
       <button
         type="button"
         onClick={onPrevMonth}
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-alt transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-eva-400"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-container-low transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-fixed-dim"
         aria-label="Mes anterior"
       >
         <svg
@@ -41,7 +41,7 @@ export function CalendarHeader({
       <button
         type="button"
         onClick={onNextMonth}
-        className="flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-alt transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-eva-400"
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-text-secondary hover:bg-surface-container-low transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-fixed-dim"
         aria-label="Mes siguiente"
       >
         <svg

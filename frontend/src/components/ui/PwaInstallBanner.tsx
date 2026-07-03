@@ -91,16 +91,16 @@ export function PwaInstallBanner() {
   if (isIOSDevice) {
     return (
       <div className="fixed bottom-4 left-4 right-4 z-40">
-        <Card padding="md" className="border-eva-200 bg-eva-50/95 shadow-lg">
+        <Card padding="md" className="border-primary-fixed-dim bg-primary-fixed/80 shadow-lg">
           <div className="flex items-start gap-3">
             <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
               📲
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-eva-700">
+              <p className="text-sm font-semibold text-primary">
                 Instalá EVA en tu iPhone
               </p>
-              <p className="text-xs text-eva-600/80 mt-1">
+              <p className="text-xs text-primary/80 mt-1">
                 Tocá el botón{" "}
                 <strong>Compartir</strong>{" "}
                 <svg
@@ -124,7 +124,7 @@ export function PwaInstallBanner() {
               <button
                 type="button"
                 onClick={handleDismiss}
-                className="text-xs text-eva-500 underline mt-2 hover:text-eva-700"
+                className="text-xs text-primary-fixed-variant underline mt-2 hover:text-primary"
               >
                 No, gracias
               </button>
@@ -132,7 +132,7 @@ export function PwaInstallBanner() {
             <button
               type="button"
               onClick={handleDismiss}
-              className="text-eva-400 hover:text-eva-600 transition-colors shrink-0"
+              className="text-primary-fixed-dim hover:text-primary transition-colors shrink-0"
               aria-label="Cerrar"
             >
               <svg
@@ -155,16 +155,16 @@ export function PwaInstallBanner() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-40">
-      <Card padding="md" className="border-eva-200 bg-eva-50/95 shadow-lg">
+      <Card padding="md" className="border-primary-fixed-dim bg-primary-fixed/80 shadow-lg">
         <div className="flex items-center gap-3">
           <span className="text-xl shrink-0" aria-hidden="true">
             📲
           </span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-eva-700">
+            <p className="text-sm font-semibold text-primary">
               Instalá EVA en tu dispositivo
             </p>
-            <p className="text-xs text-eva-600/80 mt-0.5">
+            <p className="text-xs text-primary/80 mt-0.5">
               Accedé a tu ciclo sin conexión, como una app nativa.
             </p>
           </div>
@@ -179,7 +179,7 @@ export function PwaInstallBanner() {
             <button
               type="button"
               onClick={handleDismiss}
-              className="text-eva-400 hover:text-eva-600 transition-colors"
+              className="text-primary-fixed-dim hover:text-primary transition-colors"
               aria-label="Cerrar"
             >
               <svg

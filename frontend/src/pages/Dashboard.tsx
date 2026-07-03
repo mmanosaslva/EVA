@@ -1,21 +1,18 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCycles } from "../hooks/useCycles";
+import { useAuth } from "../hooks/useAuth";
 import { computeDashboardData } from "../lib/dashboardUtils";
-import { MetricCard } from "../components/dashboard/MetricCard";
-import { RecentCycles } from "../components/dashboard/RecentCycles";
-import { CycleDurationChart } from "../components/charts/CycleDurationChart";
-import { SymptomFrequencyChart } from "../components/charts/SymptomFrequencyChart";
-import { PredictionWidget } from "../components/dashboard/PredictionWidget";
+import { PhaseCard } from "../components/dashboard/PhaseCard";
+import { CycleProgressCard } from "../components/dashboard/CycleProgressCard";
+import { TrendChartCard } from "../components/dashboard/TrendChartCard";
+import { RecommendationsCard } from "../components/dashboard/RecommendationsCard";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 
-function todayStr(): string {
-  return new Date().toISOString().split("T")[0];
-}
-
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { cycles, loading, error } = useCycles();
 
   const dashboardData = useMemo(
@@ -23,11 +20,13 @@ export default function Dashboard() {
     [cycles],
   );
 
+  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Usuaria";
+
   if (loading) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-12">
+      <div className="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto py-12">
         <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-eva-300 border-t-eva-600" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-fixed-dim border-t-primary" />
         </div>
       </div>
     );
@@ -35,12 +34,12 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-12">
-        <Card padding="md" className="border-red-200 bg-red-50 text-center">
-          <p className="text-sm text-red-600">{error}</p>
+      <div className="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto py-12">
+        <Card padding="md" className="border-error/20 bg-error-container/30 text-center">
+          <p className="text-body-sm text-on-error-container">{error}</p>
           <Button
             variant="ghost"
-            className="mt-3 text-sm"
+            className="mt-3"
             onClick={() => window.location.reload()}
           >
             Reintentar
@@ -52,12 +51,14 @@ export default function Dashboard() {
 
   if (!dashboardData || cycles.length === 0) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <p className="text-5xl mb-4" aria-hidden="true">🌸</p>
-        <h1 className="text-xl font-bold text-text-primary mb-2">
+      <div className="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto py-16 text-center">
+        <span className="material-symbols-outlined text-6xl text-text-muted mb-4 block">
+          menstrual_health
+        </span>
+        <h1 className="text-headline-md mb-2">
           Bienvenida a EVA
         </h1>
-        <p className="text-sm text-text-secondary mb-6 max-w-xs mx-auto">
+        <p className="text-body-sm text-text-muted mb-6 max-w-xs mx-auto">
           Registra tu primer ciclo menstrual para comenzar a recibir
           predicciones personalizadas y seguimiento de síntomas.
         </p>
@@ -69,140 +70,47 @@ export default function Dashboard() {
   }
 
   const {
-    avgCycleDuration,
-    avgPeriodDuration,
-    totalCycles,
     currentCycle,
     currentCycleDay,
     predictedCycleLength,
-    currentPhaseLabel,
+    currentPhase,
     currentPhaseDescription,
     predictedNextDate,
     daysUntilNext,
-    confidenceEarly,
-    confidenceLate,
-    cycleVariability,
-    fertileStart,
-    fertileEnd,
-    predictionSource,
-    modelMaeDays,
-    cyclesUsedForTraining,
-    pastCycles,
+    avgPeriodDuration,
     durationChartData,
   } = dashboardData;
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary">EVA</h1>
-          <p className="mt-1 text-sm text-text-secondary">
-            Tu salud, tus datos, tu ciclo.
-          </p>
-        </div>
+    <div className="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto w-full">
+      <div className="mb-10">
+        <p className="text-label-md text-primary font-bold uppercase tracking-widest mb-2">
+          Estado Actual
+        </p>
+        <h3 className="text-headline-lg">Buenos días, {displayName}.</h3>
       </div>
 
-      {/* Metric Cards Grid */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <MetricCard
-          icon="📊"
-          value={`${avgCycleDuration}`}
-          label="Duración promedio"
-          subtitle={`${totalCycles} ciclos`}
-          variant="highlight"
-        />
-
-        <MetricCard
-          icon="🌱"
-          value={currentPhaseLabel}
-          label="Fase actual"
-          subtitle={currentPhaseDescription}
-          variant="phase"
-          phase={dashboardData.currentPhase ?? undefined}
-        />
-
-        <MetricCard
-          icon="📍"
-          value={currentCycle ? `Día ${currentCycleDay}` : "—"}
-          label={`de ${predictedCycleLength}`}
-          subtitle={
-            currentCycle
-              ? `Inició ${new Date(currentCycle.start_date).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}`
-              : "Sin ciclo activo"
-          }
-        />
-      </div>
-
-      {/* Prediction Widget — Issue #30 + #51 */}
-      <div className="mb-5">
-        <PredictionWidget
+      <div className="grid grid-cols-12 gap-gutter">
+        <PhaseCard
+          phase={currentPhase}
+          cycleDay={currentCycleDay}
+          description={currentPhaseDescription}
           daysUntilNext={daysUntilNext}
           predictedDate={predictedNextDate}
-          confidenceEarly={confidenceEarly}
-          confidenceLate={confidenceLate}
-          fertileStart={fertileStart}
-          fertileEnd={fertileEnd}
-          source={predictionSource}
-          cycleVariability={cycleVariability}
-          modelMaeDays={modelMaeDays}
-          cyclesUsedForTraining={cyclesUsedForTraining}
-          totalCycles={totalCycles}
-          hasCycles={cycles.length > 0}
+          cycleId={currentCycle?.id ?? null}
         />
-      </div>
 
-      {/* Cycle Duration Chart — Issue #25 */}
-      <div className="mb-5">
-        <CycleDurationChart
+        <CycleProgressCard
+          cycleDay={currentCycleDay}
+          predictedCycleLength={predictedCycleLength}
+        />
+
+        <TrendChartCard
           data={durationChartData}
           average={avgPeriodDuration}
         />
-      </div>
 
-      {/* Symptom Frequency Chart — Issue #26 */}
-      <div className="mb-5">
-        <SymptomFrequencyChart totalCycles={totalCycles} />
-      </div>
-
-      {/* Recent Cycles */}
-      <div className="mb-5">
-        <RecentCycles cycles={pastCycles} />
-      </div>
-
-      {/* Quick action */}
-      {currentCycle && (
-        <Button
-          className="w-full"
-          onClick={() =>
-            navigate(
-              `/symptoms?date=${todayStr()}&cycleId=${currentCycle.id}`,
-            )
-          }
-        >
-          Registrar cómo me siento hoy
-        </Button>
-      )}
-
-      {/* Navigation links */}
-      <div className="mt-5 flex gap-3">
-        <Button
-          variant="ghost"
-          className="flex-1 text-sm"
-          onClick={() => navigate("/calendar")}
-        >
-          Ver calendario
-        </Button>
-        <Button
-          variant="ghost"
-          className="flex-1 text-sm"
-          onClick={() =>
-            navigate(
-              `/symptoms?cycleId=${currentCycle?.id ?? ""}&tab=historial`,
-            )
-          }
-        >
-          Historial de síntomas
-        </Button>
+        <RecommendationsCard phase={currentPhase} />
       </div>
     </div>
   );

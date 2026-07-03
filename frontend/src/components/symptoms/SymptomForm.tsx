@@ -29,17 +29,17 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 const FLOW_COLORS: Record<FlowLevel, string> = {
-  none: "bg-gray-100 text-gray-600 border-gray-200",
+  none: "bg-surface-container-low text-on-surface-variant border-border-subtle",
   light: "bg-blue-50 text-blue-600 border-blue-200",
   medium: "bg-blue-100 text-blue-700 border-blue-300",
-  heavy: "bg-red-50 text-red-600 border-red-200",
+  heavy: "bg-error-container/30 text-on-error-container border-error/20",
 };
 
 const FLOW_ACTIVE_COLORS: Record<FlowLevel, string> = {
   none: "bg-gray-200 text-gray-800 border-gray-400 ring-2 ring-gray-400/30",
   light: "bg-blue-100 text-blue-800 border-blue-400 ring-2 ring-blue-400/30",
   medium: "bg-blue-200 text-blue-900 border-blue-500 ring-2 ring-blue-500/30",
-  heavy: "bg-red-100 text-red-800 border-red-400 ring-2 ring-red-400/30",
+  heavy: "bg-error-container text-on-error-container border-error/40 ring-2 ring-error-container/50",
 };
 
 const FLOW_ICONS: Record<FlowLevel, string> = {
@@ -120,7 +120,7 @@ export function SymptomForm({ date, cycleId, onSuccess, onCancel }: SymptomFormP
     return (
       <Card padding="md">
         <div className="flex items-center justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-eva-300 border-t-eva-600" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-fixed-dim border-t-primary" />
         </div>
       </Card>
     );
@@ -169,7 +169,7 @@ export function SymptomForm({ date, cycleId, onSuccess, onCancel }: SymptomFormP
         </div>
 
         {formError && !saving && (
-          <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+          <div className="mb-4 rounded-lg bg-error-container/30 border border-error/20 px-4 py-3 text-body-sm text-on-error-container">
             {formError}
           </div>
         )}
@@ -202,8 +202,8 @@ export function SymptomForm({ date, cycleId, onSuccess, onCancel }: SymptomFormP
                             onClick={() => toggleSymptom(symptom.id)}
                             className={`w-full rounded-lg border px-2.5 py-1.5 text-left text-xs font-medium transition-colors ${
                               isSelected
-                                ? "bg-eva-50 border-eva-300 text-eva-700"
-                                : "bg-white border-border text-text-secondary hover:bg-gray-50"
+                                ? "bg-primary-fixed/50 border-primary-fixed-dim text-primary"
+                                : "bg-white border-border text-text-secondary hover:bg-surface-container-low"
                             }`}
                             aria-pressed={isSelected}
                             aria-label={`${symptom.name}${isSelected ? `, intensidad ${intensity}` : ""}`}
@@ -307,7 +307,7 @@ export function SymptomForm({ date, cycleId, onSuccess, onCancel }: SymptomFormP
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
               setNotes(e.target.value)
             }
-            className="w-full rounded-lg border border-border px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-eva-400/30 resize-none"
+            className="w-full rounded-lg border border-border px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-primary-fixed-dim/30 resize-none"
           />
           <p className="text-xs text-text-muted mt-1">
             {notes.length}/500 caracteres

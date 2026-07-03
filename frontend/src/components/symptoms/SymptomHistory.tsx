@@ -21,17 +21,17 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  fisica: "bg-red-100 text-red-700",
-  emocional: "bg-lavender-100 text-lavender-700",
+  fisica: "bg-error-container text-on-error-container",
+  emocional: "bg-secondary-fixed text-on-secondary-fixed-variant",
   digestiva: "bg-green-100 text-green-700",
-  otra: "bg-gray-100 text-gray-700",
+  otra: "bg-surface-container-low text-on-surface-variant",
 };
 
 const FLOW_DISPLAY: Record<string, { label: string; color: string; bar: string }> = {
   none: { label: "Sin flujo", color: "text-gray-400", bar: "bg-gray-200" },
   light: { label: "Flujo leve", color: "text-blue-500", bar: "bg-blue-300" },
   medium: { label: "Flujo medio", color: "text-blue-600", bar: "bg-blue-400" },
-  heavy: { label: "Flujo abundante", color: "text-red-500", bar: "bg-red-400" },
+  heavy: { label: "Flujo abundante", color: "text-error", bar: "bg-error" },
 };
 
 function formatDay(dateStr: string): string {
@@ -50,14 +50,14 @@ function IntensityBar({ value }: { value: number }) {
     value <= 2
       ? "bg-green-400"
       : value === 3
-        ? "bg-amber-400"
+        ? "bg-warning-orange"
         : value === 4
           ? "bg-orange-400"
-          : "bg-red-400";
+          : "bg-error";
 
   return (
     <div className="flex items-center gap-2 mt-0.5">
-      <div className="h-1.5 flex-1 rounded-full bg-gray-100 overflow-hidden">
+      <div className="h-1.5 flex-1 rounded-full bg-surface-container-low overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${barColor}`}
           style={{ width: `${pct}%` }}
@@ -94,21 +94,21 @@ function SymptomRow({ symptom }: { symptom: DailySymptom }) {
   );
 }
 
-function FlowIndicator({ flowLevel }: { flowLevel: string }) {
-  const info = FLOW_DISPLAY[flowLevel] ?? FLOW_DISPLAY.none;
+function FlowIndicator({ flowLevel }: { flowLevel: string | null }) {
+  const info = FLOW_DISPLAY[flowLevel ?? "none"] ?? FLOW_DISPLAY.none;
 
   return (
     <div className="flex items-center gap-2">
       <div className="flex gap-0.5">
-        <span className={`h-1.5 w-4 rounded-sm ${flowLevel === "none" ? "bg-gray-100" : info.bar}`} />
+        <span className={`h-1.5 w-4 rounded-sm ${flowLevel === "none" ? "bg-surface-container-low" : info.bar}`} />
         <span
           className={`h-1.5 w-4 rounded-sm ${
-            flowLevel === "medium" || flowLevel === "heavy" ? info.bar : "bg-gray-100"
+            flowLevel === "medium" || flowLevel === "heavy" ? info.bar : "bg-surface-container-low"
           }`}
         />
         <span
           className={`h-1.5 w-4 rounded-sm ${
-            flowLevel === "heavy" ? info.bar : "bg-gray-100"
+            flowLevel === "heavy" ? info.bar : "bg-surface-container-low"
           }`}
         />
       </div>
@@ -207,8 +207,8 @@ function EmptyState({ onRegister }: { onRegister: () => void }) {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <Card padding="md" className="border-red-200 bg-red-50">
-      <p className="text-sm text-red-600 text-center">{message}</p>
+    <Card padding="md" className="border-error/20 bg-error-container/30">
+      <p className="text-body-sm text-on-error-container text-center">{message}</p>
     </Card>
   );
 }
@@ -217,7 +217,7 @@ function LoadingState() {
   return (
     <Card padding="lg">
       <div className="flex items-center justify-center py-12">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-eva-300 border-t-eva-600" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-fixed-dim border-t-primary" />
       </div>
     </Card>
   );

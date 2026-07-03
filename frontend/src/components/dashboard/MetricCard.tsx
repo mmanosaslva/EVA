@@ -11,8 +11,8 @@ interface MetricCardProps {
 
 const variantStyles: Record<string, string> = {
   default: "text-text-primary",
-  highlight: "text-eva-600",
-  phase: "text-lavender-600",
+  highlight: "text-primary",
+  phase: "text-secondary",
 };
 
 export function MetricCard({
@@ -24,10 +24,10 @@ export function MetricCard({
   phase,
 }: MetricCardProps) {
   const phaseColors: Record<string, string> = {
-    menstruacion: "bg-red-50 border-red-200",
-    folicular: "bg-lavender-50 border-lavender-200",
+    menstruacion: "bg-error-container/30 border-error/20",
+    folicular: "bg-secondary-fixed border-secondary-fixed-dim",
     ovulacion: "bg-green-50 border-green-200",
-    lutea: "bg-amber-50 border-amber-200",
+    lutea: "bg-luteal-yellow border-warning-orange/20",
   };
 
   const extraClass = phase ? phaseColors[phase] ?? "" : "";

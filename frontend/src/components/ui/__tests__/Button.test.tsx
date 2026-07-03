@@ -11,13 +11,13 @@ describe("Button", () => {
   it("aplica la variante primary por defecto", () => {
     render(<Button>Primary</Button>);
     const button = screen.getByRole("button");
-    expect(button).toHaveClass("bg-eva-500");
+    expect(button).toHaveClass("bg-primary");
   });
 
   it("aplica la variante secondary cuando se especifica", () => {
     render(<Button variant="secondary">Secondary</Button>);
     const button = screen.getByRole("button");
-    expect(button).toHaveClass("bg-lavender-100");
+    expect(button).toHaveClass("bg-secondary-fixed");
   });
 
   it("aplica la variante ghost cuando se especifica", () => {
@@ -51,7 +51,7 @@ describe("Button", () => {
   it("renderiza correctamente con variant y className combinados", () => {
     render(<Button variant="secondary" className="w-full">Full width</Button>);
     const button = screen.getByRole("button");
-    expect(button).toHaveClass("bg-lavender-100");
+    expect(button).toHaveClass("bg-secondary-fixed");
     expect(button).toHaveClass("w-full");
   });
 });

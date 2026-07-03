@@ -98,7 +98,7 @@ export function DayDetail({ day, onClose, onEditCycle }: DayDetailProps) {
                 {day.dailyLog.symptoms.map((s) => (
                   <span
                     key={s.symptom_id}
-                    className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs text-text-secondary"
+                    className="inline-flex items-center rounded-full bg-surface-container-low px-2 py-0.5 text-xs text-text-secondary"
                   >
                     {s.name} · {s.intensity}/5
                   </span>
