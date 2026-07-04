@@ -149,18 +149,161 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 
 ---
 
-## 📋 Resumen de distribución
+## 🛠️ Sprint 10 — Bugfix & Estabilización (Post-Lanzamiento)
+*Milestone: "Sprint 10 — Bugfix & Estabilización"*
 
-| Developer | Issues principales | Issues como participante | Total involucrado |
-|-----------|-------------------|--------------------------|-------------------|
-| Daniel    | 22                | 10                       | 32                |
-| Meriyei   | 19                | 11                       | 30                |
-| Madeleine | 13                | 12                       | 25                |
-| Joshua    | 8                 | 3                        | 11                |
+### Crítico — Bloquea funcionalidad
 
-### Sectores con participación cruzada:
-- **Daniel** toca: Frontend (22) + Backend/auth (2) + AI/frontend (1)
-- **Meriyei** toca: Backend (19) + AI/predicción (3) + Testing review (3)
-- **Madeleine** toca: Testing E2E/DevOps (13) + Frontend/PWA (3) + LLM backend (2)
-- **Joshua** toca: ML/Prophet (6) + Tests ML (2) + Auditoría privacidad (1)
+| # | Título | Asignado | Labels |
+|---|--------|----------|--------|
+| 63 | `useDailyLogs` llama API con `cycleId` vacío → 500 en backend | Daniel | `frontend` `bug` |
+| 64 | Backend: validar `cycle_id` UUID antes de query (evitar DataError) | Meriyei | `backend` `bug` |
+| 65 | CORS no devuelve headers en respuestas de error 500 | Madeleine | `backend` `bug` `devops` |
+
+### Alto — Afecta experiencia de usuario
+
+| # | Título | Asignado | Labels |
+|---|--------|----------|--------|
+| 66 | Vite WebSocket HMR falla desde dispositivos en red local | Daniel | `frontend` `bug` `pwa` |
+| 67 | `POST /insights` → 503 cuando Ollama no está corriendo (mejorar mensaje) | Madeleine | `backend` `ai` `bug` |
+| 68 | `apiClient.ts` muestra "Failed to fetch" genérico en vez de mensaje descriptivo | Daniel | `frontend` `bug` |
+| 69 | Latencia alta (~1.5s) en queries a BD (sin cache de catálogo de síntomas) | Meriyei | `backend` `performance` |
+| 70 | `GET /cycles` → 401 por JWT ES256 no soportado (solo validaba HS256) | Meriyei | `backend` `auth` `security` `bug` |
+| 71 | PgBouncer + asyncpg: `DuplicatePreparedStatementError` (statement_cache_size=0 requerido) | Meriyei | `backend` `database` `bug` |
+| 72 | Cache frontend de ciclos y daily-logs para evitar peticiones duplicadas | Daniel | `frontend` `performance` |
+
+### Medio — Deuda técnica
+
+| # | Título | Asignado | Labels |
+|---|--------|----------|--------|
+| 73 | Dependencias faltantes en `requirements.txt`: `greenlet`, `jinja2`, `cryptography` | Madeleine | `backend` `setup` |
+| 74 | TypeScript: tipos `DailyLog.flow_level` y `Cycle` inconsistentes con backend | Daniel | `frontend` `bug` |
+| 75 | Service Worker pattern solo matchea `localhost` — no funciona con IPs de red | Daniel | `frontend` `pwa` |
+
+---
+
+## 📋 Detalle técnico por issue
+
+### #63 — `useDailyLogs` llama API con `cycleId` vacío
+
+**Síntoma:** `GET /daily-logs?cycle_id=` → 500 Internal Server Error  
+**Origen:** `SymptomsPage.tsx` pasa `cycleId` vacío cuando no encuentra ciclo para la fecha. `useDailyLogs` ejecuta el `useEffect` sin validar.  
+**Fix:** Agregar `if (!cycleId) return` en `useDailyLogs.ts` antes de `load()`.  
+**Archivos:** `hooks/useDailyLogs.ts:45`, `pages/SymptomsPage.tsx:43`
+
+### #64 — Validar `cycle_id` UUID en backend
+
+**Síntoma:** PostgreSQL lanza `DataError: invalid UUID ''` cuando recibe string vacío.  
+**Origen:** `symptom_service.py:71` → `cycle_repo.get_cycle_by_id(cycle_id="", user_id)` sin validar.  
+**Fix:** Agregar validación en `list_logs_by_cycle()` — si `cycle_id` es vacío o < 32 chars, retornar 400.  
+**Archivos:** `services/symptom_service.py:71`, `routers/symptoms.py:46`
+
+### #65 — CORS no responde en errores 500
+
+**Síntoma:** El navegador bloquea respuestas de error porque no tienen header `Access-Control-Allow-Origin`.  
+**Origen:** `CORSMiddleware` está después de `SecurityHeadersMiddleware` en `main.py`. En errores no manejados, la excepción sale antes de que CORS procese la respuesta.  
+**Fix:** Mover `CORSMiddleware` al primer lugar en `main.py:55-63`.  
+**Archivos:** `main.py:55-63`
+
+### #66 — Vite HMR WebSocket falla en red
+
+**Síntoma:** `WebSocket connection to 'ws://localhost:5173/' failed` desde dispositivos remotos.  
+**Origen:** El script HMR de Vite intenta conectar a `localhost`, que en el dispositivo remoto es ese mismo dispositivo, no el servidor.  
+**Fix:** Agregar `hmr: { clientPort: 5173 }` en `vite.config.ts` dentro de `server`.  
+**Archivos:** `vite.config.ts`
+
+### #67 — `POST /insights` → 503 sin Ollama
+
+**Síntoma:** El endpoint devuelve 503 sin un mensaje claro al usuario.  
+**Origen:** `llm_service.py` intenta Ollama → falla, intenta Groq → también falla, lanza `RuntimeError`.  
+**Fix:** Mejorar mensaje de error indicando que Ollama debe estar corriendo localmente. Documentar setup en README.  
+**Archivos:** `services/llm_service.py`
+
+### #68 — `apiClient.ts` muestra "Failed to fetch" genérico
+
+**Síntoma:** Errores de red muestran mensaje críptico del navegador en vez de algo descriptivo.  
+**Origen:** `apiClient.ts` no captura `TypeError` de `fetch()` nativo.  
+**Fix:** Agregar try/catch alrededor de `fetch()` con mensaje descriptivo en español. YA IMPLEMENTADO.  
+**Archivos:** `services/apiClient.ts`
+
+### #69 — Latencia alta en queries a BD
+
+**Síntoma:** `GET /symptoms` demora ~1.3s, `GET /cycles` ~1.3s por latencia geográfica a Supabase (us-west-2).  
+**Origen:** Cada request hace round-trip a PostgreSQL en AWS.  
+**Fix:** Cache en memoria del catálogo de síntomas (static data). YA IMPLEMENTADO: bajó de 1.3s a 8ms.  
+**Archivos:** `services/symptom_service.py:24`
+
+### #70 — JWT ES256 no soportado
+
+**Síntoma:** `GET /cycles` → 401 incluso con token válido de Supabase.  
+**Origen:** `security.py` solo validaba `HS256`. Supabase emite tokens `ES256` (algoritmo asimétrico).  
+**Fix:** Agregar fallback a validación ES256/RS256 vía JWKS (`PyJWKClient`). YA IMPLEMENTADO.  
+**Archivos:** `core/security.py`
+
+### #71 — PgBouncer + asyncpg prepared statement conflict
+
+**Síntoma:** `DuplicatePreparedStatementError` en queries a BD vía Supabase pooler (puerto 6543).  
+**Origen:** asyncpg usa prepared statements por defecto. PgBouncer en modo transaction no los soporta.  
+**Fix:** `connect_args={"statement_cache_size": 0}` en `create_async_engine()`. YA IMPLEMENTADO.  
+**Archivos:** `core/db.py:10`
+
+### #72 — Cache frontend de ciclos y daily-logs
+
+**Síntoma:** Peticiones duplicadas en cada montaje de componente (Dashboard + Calendar cargan los mismos datos).  
+**Origen:** `useCycles()` y `useDailyLogs()` se llaman en múltiples componentes sin compartir estado.  
+**Fix:** Cache en memoria con invalidación al crear/editar. YA IMPLEMENTADO.  
+**Archivos:** `services/cycleService.ts`, `services/symptomService.ts`
+
+### #73 — Dependencias faltantes en requirements.txt
+
+**Síntoma:** `pip install -r requirements.txt` no instala todas las dependencias necesarias.  
+**Origen:** `greenlet` (requerido por SQLAlchemy async), `jinja2` (requerido por Sentry/Starlette), `cryptography` (requerido por PyJWKClient).  
+**Fix:** Agregar las 3 dependencias a `requirements.txt`. YA IMPLEMENTADO parcialmente — verificar que estén todas.  
+**Archivos:** `requirements.txt`
+
+### #74 — TypeScript types inconsistentes con backend
+
+**Síntoma:** `DailyLog.flow_level` era `"none" | "light" | "medium" | "heavy"` pero backend retorna `string | null`.  
+**Origen:** Tipos del frontend más estrictos que la respuesta real del backend.  
+**Fix:** Actualizar `DailyLog.flow_level` a `string | null` y `Cycle.updated_at` agregado. YA IMPLEMENTADO.  
+**Archivos:** `lib/types.ts:104-109`, `lib/types.ts:130-136`
+
+### #75 — Service Worker cache pattern solo matchea localhost
+
+**Síntoma:** El runtime caching del Service Worker no aplica cuando la API se accede vía IP de red.  
+**Origen:** `urlPattern: /^http:\/\/localhost:\d+\/.*/i` en `vite.config.ts:68`.  
+**Fix:** Extender el patrón para incluir IPs de red local. YA IMPLEMENTADO.  
+**Archivos:** `vite.config.ts:68`
+
+---
+
+## 📋 Resumen Sprint 10
+
+| Estado | Cantidad | Issues |
+|--------|----------|--------|
+| ✅ Implementado | 6 | #68, #69, #70, #71, #72, #75 |
+| 🔧 Pendiente Daniel | 3 | #63, #66, #74 (verificar) |
+| 🔧 Pendiente Meriyei | 1 | #64 |
+| 🔧 Pendiente Madeleine | 3 | #65, #67, #73 (verificar) |
+
+### Orden de ejecución
+
+```
+1. #63 + #64 (Daniel + Meriyei)  → Elimina el 500 que más aparece en logs
+2. #65 (Madeleine)               → Permite ver errores reales sin bloqueo CORS
+3. #66 (Daniel)                  → HMR funcional desde cualquier dispositivo
+4. #67 (Madeleine)               → UX de insights sin Ollama
+5. #73 + #74 (Madeleine + Daniel) → Deuda técnica pendiente
+```
+
+---
+
+## 📋 Resumen de distribución actualizado
+
+| Developer | Issues Sprint 1-9 | Issues Sprint 10 | Total |
+|-----------|:---:|:---:|:---:|
+| Daniel    | 22 | 3 | 25 |
+| Meriyei   | 19 | 1 | 20 |
+| Madeleine | 13 | 3 | 16 |
+| Joshua    | 8  | 0 | 8  |
 
