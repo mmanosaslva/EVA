@@ -46,11 +46,11 @@ export default function RegisterPage() {
   const displayError = localError || authError;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-alt px-4">
+    <div className="flex min-h-screen items-center justify-center bg-surface px-4">
       <Card padding="lg" className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-eva-600">EVA</h1>
-          <p className="mt-1 text-sm text-text-muted">
+          <h1 className="text-headline-lg text-primary">EVA</h1>
+          <p className="mt-1 text-body-sm text-text-muted">
             Crea tu cuenta gratuita
           </p>
         </div>
@@ -96,7 +96,7 @@ export default function RegisterPage() {
           />
 
           {displayError && (
-            <p className="text-sm text-red-500" role="alert">
+            <p className="text-body-sm text-error" role="alert">
               {displayError}
             </p>
           )}
@@ -113,9 +113,9 @@ export default function RegisterPage() {
           </Button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-text-muted">
+        <p className="mt-4 text-center text-body-sm text-text-muted">
           ¿Ya tienes cuenta?{" "}
-          <Link to="/login" className="text-eva-600 hover:text-eva-700 font-medium">
+          <Link to="/login" className="text-primary hover:text-primary-fixed-variant font-medium">
             Inicia sesión
           </Link>
         </p>

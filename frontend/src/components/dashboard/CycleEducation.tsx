@@ -21,7 +21,7 @@ function ArticleCard({
   content: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-white p-3 transition-colors hover:border-lavender-200">
+    <div className="rounded-lg border border-border bg-white p-3 transition-colors hover:border-secondary-fixed-dim">
       <h4 className="text-sm font-semibold text-text-primary mb-1">{title}</h4>
       <p className="text-xs text-text-secondary leading-relaxed">{content}</p>
     </div>
@@ -127,9 +127,9 @@ export function CycleEducation({ currentPhase }: CycleEducationProps) {
               key={phase}
               className={`rounded-lg ${
                 isCurrent && !isExpanded
-                  ? "border border-lavender-200 bg-lavender-50/50"
+                  ? "border border-secondary-fixed-dim bg-secondary-fixed/50"
                   : ""
-              } ${isCurrent && isExpanded ? "border border-lavender-200 bg-lavender-50/30 -mx-2 px-2 rounded-lg" : ""}`}
+              } ${isCurrent && isExpanded ? "border border-secondary-fixed-dim bg-secondary-fixed/30 -mx-2 px-2 rounded-lg" : ""}`}
             >
               <PhaseSection
                 phase={phase}
@@ -140,7 +140,7 @@ export function CycleEducation({ currentPhase }: CycleEducationProps) {
               />
 
               {isCurrent && !isExpanded && (
-                <p className="ml-7 pb-3 text-[11px] text-lavender-600">
+                <p className="ml-7 pb-3 text-[11px] text-secondary">
                   Tu fase actual — expandí para ver los artículos
                 </p>
               )}

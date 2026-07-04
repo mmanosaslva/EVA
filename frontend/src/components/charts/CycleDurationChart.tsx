@@ -149,15 +149,15 @@ export function CycleDurationChart({
       </div>
       <div className="flex items-center justify-center gap-4 mt-3 text-xs text-text-muted">
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-lavender-500 inline-block" />
+          <span className="h-2.5 w-2.5 rounded-full bg-secondary inline-block" />
           Duración (días)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-0.5 w-4 bg-eva-500 inline-block [border:none]" />
+          <span className="h-0.5 w-4 bg-primary inline-block [border:none]" />
           Promedio ({average} días)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-4 bg-eva-500/10 rounded-sm inline-block" />
+          <span className="h-2.5 w-4 bg-primary/10 rounded-sm inline-block" />
           ±3 días
         </span>
       </div>

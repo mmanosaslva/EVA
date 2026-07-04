@@ -82,7 +82,7 @@ export function useDailyLogForm({
               symptomsMap[s.symptom_id] = s.intensity;
             }
             setSelectedSymptoms(symptomsMap);
-            setFlowLevelState(log.flow_level || "none");
+            setFlowLevelState((log.flow_level as FlowLevel) || "none");
             setTemperature(
               log.temperature !== null ? String(log.temperature) : "",
             );

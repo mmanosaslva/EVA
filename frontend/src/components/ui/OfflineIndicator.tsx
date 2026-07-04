@@ -25,9 +25,9 @@ export function OfflineIndicator({
     return (
       <div
         role="alert"
-        className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center"
+        className="bg-warning-orange/10 border-b border-warning-orange/20 px-4 py-2 text-center"
       >
-        <p className="text-xs font-medium text-amber-700 flex items-center justify-center gap-1.5">
+        <p className="text-xs font-medium text-warning-orange flex items-center justify-center gap-1.5">
           <span aria-hidden="true">📡</span>
           Sin conexión a internet — tus datos se guardan localmente
         </p>

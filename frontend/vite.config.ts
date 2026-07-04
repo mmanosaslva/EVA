@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  server: { host: true },
   plugins: [
     react(),
     tailwindcss(),
@@ -65,7 +66,7 @@ export default defineConfig({
             },
           },
           {
-            urlPattern: /^http:\/\/localhost:\d+\/.*/i,
+            urlPattern: /^http:\/\/(localhost|192\.168\.\d+\.\d+):\d+\/.*/i,
             handler: "NetworkFirst",
             options: {
               cacheName: "eva-api",

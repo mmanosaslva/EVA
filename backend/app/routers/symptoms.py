@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, status
 
 from app.core.security import get_current_user
+from app.core.validators import validate_uuid_or_400
 from app.models.symptom import (
     SymptomResponse,
     DailyLogCreate,
@@ -30,6 +31,7 @@ async def create_daily_log(
     body: DailyLogCreate,
     current_user: dict = Depends(get_current_user),
 ):
+    validate_uuid_or_400(body.cycle_id, "cycle_id")
     return await symptom_service.create_log(
         data=body.model_dump(exclude_none=True),
         user_id=current_user["user_id"],
@@ -43,6 +45,7 @@ async def list_daily_logs(
     offset: int = Query(0, ge=0),
     current_user: dict = Depends(get_current_user),
 ):
+    validate_uuid_or_400(cycle_id, "cycle_id")
     total, logs = await symptom_service.list_logs_by_cycle(
         cycle_id=cycle_id,
         user_id=current_user["user_id"],

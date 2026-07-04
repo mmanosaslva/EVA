@@ -11,7 +11,7 @@ interface ToastProps {
 
 const variantStyles: Record<ToastVariant, string> = {
   success: "bg-green-50 border-green-200 text-green-700",
-  error: "bg-red-50 border-red-200 text-red-700",
+  error: "bg-error-container/30 border-error/20 text-error",
 };
 
 const variantIcons: Record<ToastVariant, ReactNode> = {

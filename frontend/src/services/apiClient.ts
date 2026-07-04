@@ -28,17 +28,33 @@ export async function apiClient<T = unknown>(
     config.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${API_BASE}${path}`, config);
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE}${path}`, config);
+  } catch {
+    throw new Error(
+      `No se pudo conectar con el servidor (${API_BASE}). Verificá que el backend esté corriendo.`,
+    );
+  }
 
   if (response.status === 204) {
     return undefined as T;
   }
 
-  const data = await response.json();
+  let data: Record<string, unknown>;
+
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(
+      `Respuesta inesperada del servidor (${response.status}). Intentá de nuevo.`,
+    );
+  }
 
   if (!response.ok) {
-    const message = data.detail || `Error ${response.status}`;
-    throw new Error(message);
+    const message = data.detail || `Error del servidor (${response.status})`;
+    throw new Error(typeof message === "string" ? message : `Error ${response.status}`);
   }
 
   return data as T;

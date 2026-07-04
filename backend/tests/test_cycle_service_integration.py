@@ -140,7 +140,7 @@ class TestGetCycleById:
 
     async def test_not_found(self):
         with pytest.raises(HTTPException) as exc:
-            await get_cycle_by_id("nonexistent-id", TEST_USER_ID)
+            await get_cycle_by_id("550e8400-e29b-41d4-a716-4466554400ff", TEST_USER_ID)
         assert exc.value.status_code == 404
 
     async def test_wrong_user_returns_404(self, existing_cycle):
@@ -161,7 +161,7 @@ class TestUpdateCycle:
     async def test_not_found(self):
         with pytest.raises(HTTPException) as exc:
             await update_cycle(
-                cycle_id="nonexistent",
+                cycle_id="550e8400-e29b-41d4-a716-4466554400ff",
                 user_id=TEST_USER_ID,
                 data={"end_date": date(2025, 6, 5)},
             )
@@ -210,7 +210,7 @@ class TestDeleteCycle:
 
     async def test_not_found(self):
         with pytest.raises(HTTPException) as exc:
-            await delete_cycle("nonexistent", TEST_USER_ID)
+            await delete_cycle("550e8400-e29b-41d4-a716-4466554400ff", TEST_USER_ID)
         assert exc.value.status_code == 404
 
     async def test_wrong_user_returns_404(self, existing_cycle):

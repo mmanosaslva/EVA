@@ -9,11 +9,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-eva-500 text-white hover:bg-eva-600 active:bg-eva-700 focus-visible:ring-eva-400",
+    "bg-primary text-on-primary hover:bg-primary-container active:bg-primary/90 focus-visible:ring-primary-fixed-dim",
   secondary:
-    "bg-lavender-100 text-lavender-800 hover:bg-lavender-200 active:bg-lavender-300 focus-visible:ring-lavender-400",
+    "bg-secondary-fixed text-on-secondary-fixed-variant hover:bg-secondary-fixed-dim active:bg-secondary-container/30 focus-visible:ring-secondary-fixed-dim",
   ghost:
-    "bg-transparent text-text-secondary hover:bg-surface-alt active:bg-gray-100 focus-visible:ring-gray-300",
+    "bg-transparent text-on-surface-variant hover:bg-surface-container-low active:bg-surface-container focus-visible:ring-outline-variant",
 };
 
 export function Button({
@@ -24,7 +24,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${variantStyles[variant]} ${className}`}
+      className={`inline-flex items-center justify-center rounded-xl px-6 py-3 text-label-md font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-95 disabled:pointer-events-none disabled:opacity-50 ${variantStyles[variant]} ${className}`}
       {...props}
     >
       {children}

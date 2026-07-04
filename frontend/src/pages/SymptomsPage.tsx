@@ -97,11 +97,13 @@ export default function SymptomsPage() {
   if (!cycleId) {
     return (
       <div className="mx-auto max-w-lg px-4 py-12 text-center">
-        <p className="text-5xl mb-4">📅</p>
-        <h2 className="text-lg font-semibold text-text-primary mb-2">
+        <span className="material-symbols-outlined text-6xl text-text-muted mb-4 block">
+          calendar_today
+        </span>
+        <h2 className="text-headline-sm mb-2">
           Sin ciclo para esta fecha
         </h2>
-        <p className="text-sm text-text-secondary mb-6">
+        <p className="text-body-sm text-text-muted mb-6">
           Registra un ciclo primero desde el calendario para poder añadir síntomas.
         </p>
         <Button onClick={() => navigate("/calendar")}>Ir al calendario</Button>
@@ -113,32 +115,18 @@ export default function SymptomsPage() {
     <div className="mx-auto max-w-lg px-4 py-6">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">
-            Síntomas
-          </h1>
-          <p className="mt-1 text-sm text-text-secondary">
+          <h1 className="text-headline-md">Síntomas</h1>
+          <p className="mt-1 text-body-sm text-text-muted">
             Registra cómo te sientes cada día de tu ciclo.
           </p>
         </div>
         <button
           type="button"
           onClick={handleFormCancel}
-          className="text-text-muted hover:text-text-secondary transition-colors p-1"
+          className="text-text-muted hover:text-primary transition-colors p-1"
           aria-label="Volver al calendario"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
+          <span className="material-symbols-outlined">close</span>
         </button>
       </div>
 
@@ -147,10 +135,10 @@ export default function SymptomsPage() {
         <button
           type="button"
           onClick={() => setActiveTab("registrar")}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+          className={`px-4 py-2.5 text-label-md font-medium border-b-2 transition-colors -mb-px ${
             activeTab === "registrar"
-              ? "border-eva-500 text-eva-600"
-              : "border-transparent text-text-muted hover:text-text-secondary"
+              ? "border-primary text-primary"
+              : "border-transparent text-text-muted hover:text-primary"
           }`}
         >
           Registrar
@@ -158,10 +146,10 @@ export default function SymptomsPage() {
         <button
           type="button"
           onClick={() => setActiveTab("historial")}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+          className={`px-4 py-2.5 text-label-md font-medium border-b-2 transition-colors -mb-px ${
             activeTab === "historial"
-              ? "border-eva-500 text-eva-600"
-              : "border-transparent text-text-muted hover:text-text-secondary"
+              ? "border-primary text-primary"
+              : "border-transparent text-text-muted hover:text-primary"
           }`}
         >
           Historial
@@ -186,26 +174,14 @@ export default function SymptomsPage() {
               type="button"
               onClick={() => handleNavigateCycle("next")}
               disabled={cycleIndex <= 0}
-              className="p-1.5 rounded-lg text-text-muted hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg text-text-muted hover:bg-surface-container-low disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               aria-label="Ciclo anterior"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M15 18l-6-6 6-6" />
-              </svg>
+              <span className="material-symbols-outlined">chevron_left</span>
             </button>
 
             <div className="text-center">
-              <span className="text-sm font-medium text-text-primary">
+              <span className="text-body-sm font-medium">
                 Ciclo {cycles.length - cycleIndex} de {cycles.length}
               </span>
               <p className="text-xs text-text-muted mt-0.5">
@@ -225,22 +201,10 @@ export default function SymptomsPage() {
               type="button"
               onClick={() => handleNavigateCycle("prev")}
               disabled={cycleIndex >= cycles.length - 1}
-              className="p-1.5 rounded-lg text-text-muted hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg text-text-muted hover:bg-surface-container-low disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               aria-label="Ciclo siguiente"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M9 18l6-6-6-6" />
-              </svg>
+              <span className="material-symbols-outlined">chevron_right</span>
             </button>
           </div>
 

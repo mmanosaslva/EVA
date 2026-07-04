@@ -57,24 +57,20 @@ export default function ExportPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6">
-      <h1 className="text-2xl font-bold text-text-primary mb-1">
-        Configuración
-      </h1>
-      <p className="text-sm text-text-secondary mb-6">
+      <h1 className="text-headline-md mb-1">Configuración</h1>
+      <p className="text-body-sm text-text-muted mb-6">
         Gestioná tus datos y privacidad
       </p>
 
       {/* Mis datos — CSV */}
       <Card padding="md" className="mb-4">
         <div className="flex items-start gap-3">
-          <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
-            📥
+          <span className="material-symbols-outlined text-xl shrink-0 mt-0.5 text-primary">
+            download
           </span>
           <div className="flex-1">
-            <h2 className="text-sm font-semibold text-text-primary mb-1">
-              Mis datos
-            </h2>
-            <p className="text-xs text-text-secondary mb-3">
+            <h2 className="text-body-md font-semibold mb-1">Mis datos</h2>
+            <p className="text-body-sm text-text-muted mb-3">
               Descargá toda tu información de ciclos y síntomas en formato CSV.
               Compatible con Excel y Google Sheets.
             </p>
@@ -86,7 +82,7 @@ export default function ExportPage() {
             >
               {downloading === "csv" ? (
                 <span className="flex items-center gap-2">
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-lavender-300 border-t-lavender-600" />
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-secondary-fixed-dim border-t-secondary" />
                   Descargando...
                 </span>
               ) : (
@@ -100,14 +96,12 @@ export default function ExportPage() {
       {/* Informe médico — PDF */}
       <Card padding="md" className="mb-4">
         <div className="flex items-start gap-3">
-          <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
-            📄
+          <span className="material-symbols-outlined text-xl shrink-0 mt-0.5 text-secondary">
+            description
           </span>
           <div className="flex-1">
-            <h2 className="text-sm font-semibold text-text-primary mb-1">
-              Informe médico
-            </h2>
-            <p className="text-xs text-text-secondary mb-3">
+            <h2 className="text-body-md font-semibold mb-1">Informe médico</h2>
+            <p className="text-body-sm text-text-muted mb-3">
               Generá un PDF profesional con tu historial, síntomas frecuentes y
               predicciones para compartir con tu ginecóloga.
             </p>
@@ -118,10 +112,10 @@ export default function ExportPage() {
                   key={value}
                   type="button"
                   onClick={() => setCyclesBack(value)}
-                  className={`rounded-lg border px-3 py-1 text-[11px] font-medium transition-colors ${
+                  className={`rounded-lg border px-3 py-1 text-label-md font-medium transition-colors ${
                     cyclesBack === value
-                      ? "border-eva-300 bg-eva-50 text-eva-700"
-                      : "border-border text-text-secondary hover:bg-gray-50"
+                      ? "border-primary-fixed-dim bg-primary-fixed/50 text-primary"
+                      : "border-border text-text-muted hover:bg-surface-container-low"
                   }`}
                 >
                   {label}
@@ -137,7 +131,7 @@ export default function ExportPage() {
             >
               {downloading === "pdf" ? (
                 <span className="flex items-center gap-2">
-                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-lavender-300 border-t-lavender-600" />
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-secondary-fixed-dim border-t-secondary" />
                   Generando PDF...
                 </span>
               ) : (
@@ -151,14 +145,12 @@ export default function ExportPage() {
       {/* Privacidad */}
       <Card padding="md" className="mb-4">
         <div className="flex items-start gap-3">
-          <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
-            🔒
+          <span className="material-symbols-outlined text-xl shrink-0 mt-0.5 text-success-green">
+            security
           </span>
           <div className="flex-1">
-            <h2 className="text-sm font-semibold text-text-primary mb-1">
-              Privacidad
-            </h2>
-            <p className="text-xs text-text-secondary leading-relaxed">
+            <h2 className="text-body-md font-semibold mb-1">Privacidad</h2>
+            <p className="text-body-sm text-text-muted leading-relaxed">
               EVA almacena tus datos de forma segura en servidores encriptados.
               No compartimos ni vendemos tu información a terceros. Tus datos
               son tuyos: podés descargarlos o eliminarlos cuando quieras. No
@@ -170,22 +162,22 @@ export default function ExportPage() {
       </Card>
 
       {/* Zona de peligro */}
-      <Card padding="md" className="border-red-200 bg-red-50/50">
+      <Card padding="md" className="border-error/20 bg-error-container/30">
         <div className="flex items-start gap-3">
-          <span className="text-xl shrink-0 mt-0.5" aria-hidden="true">
-            ⚠️
+          <span className="material-symbols-outlined text-xl shrink-0 mt-0.5 text-error">
+            warning
           </span>
           <div className="flex-1">
-            <h2 className="text-sm font-semibold text-red-700 mb-1">
+            <h2 className="text-body-md font-semibold text-error mb-1">
               Zona de peligro
             </h2>
-            <p className="text-xs text-red-600/80 mb-3">
+            <p className="text-body-sm text-on-error-container/80 mb-3">
               Eliminar tu cuenta es una acción permanente. Se borrarán todos
               tus ciclos, registros de síntomas y datos asociados.
             </p>
             <Button
               variant="primary"
-              className="text-xs bg-red-500 hover:bg-red-600 active:bg-red-700"
+              className="text-label-md bg-error hover:bg-error/80"
               onClick={() => setShowDeleteModal(true)}
             >
               Eliminar mi cuenta

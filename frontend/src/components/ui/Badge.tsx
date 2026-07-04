@@ -9,11 +9,11 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  menstruacion: "bg-red-100 text-red-700",
-  folicular: "bg-lavender-100 text-lavender-700",
-  ovulacion: "bg-green-100 text-green-700",
-  lutea: "bg-amber-100 text-amber-700",
-  default: "bg-gray-100 text-gray-700",
+  menstruacion: "bg-menstrual-pink text-primary border border-primary/20",
+  folicular: "bg-follicular-green text-tertiary border border-tertiary/20",
+  ovulacion: "bg-ovulation-purple text-secondary border border-secondary/20",
+  lutea: "bg-luteal-yellow text-warning-orange border border-warning-orange/20",
+  default: "bg-surface-container-high text-on-surface-variant border border-border-subtle",
 };
 
 export function Badge({ children, variant = "default", className = "" }: BadgeProps) {

@@ -108,8 +108,8 @@ export function SymptomFrequencyChart({
               onClick={() => setPeriod(key)}
               className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
                 period === key
-                  ? "bg-eva-500 text-white"
-                  : "bg-white text-text-secondary hover:bg-gray-50"
+                  ? "bg-primary text-white"
+                  : "bg-white text-text-secondary hover:bg-surface-container-low"
               }`}
             >
               {label}
