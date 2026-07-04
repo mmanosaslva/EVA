@@ -5,8 +5,7 @@ const navItems = [
   { to: "/dashboard", icon: "dashboard", label: "Dashboard" },
   { to: "/calendar", icon: "history", label: "Calendario" },
   { to: "/symptoms", icon: "vital_signs", label: "Síntomas" },
-  { to: "/insights", icon: "menu_book", label: "Insights" },
-  { to: "/export", icon: "shield", label: "Privacidad" },
+  { to: "/insights", icon: "chat", label: "Asistente EVA" },
 ] as const;
 
 export function Sidebar() {
