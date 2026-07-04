@@ -135,6 +135,20 @@ class TestGetCyclesByUser:
 
 class TestGetCycleById:
     @patch("app.services.cycle_service.cycle_repo.get_cycle_by_id")
+    async def test_invalid_uuid_returns_400(self, mock_get):
+        with pytest.raises(HTTPException) as exc:
+            await get_cycle_by_id("bad-uuid", TEST_USER_ID)
+        assert exc.value.status_code == 400
+        mock_get.assert_not_awaited()
+
+    @patch("app.services.cycle_service.cycle_repo.get_cycle_by_id")
+    async def test_empty_uuid_returns_400(self, mock_get):
+        with pytest.raises(HTTPException) as exc:
+            await get_cycle_by_id("", TEST_USER_ID)
+        assert exc.value.status_code == 400
+        mock_get.assert_not_awaited()
+
+    @patch("app.services.cycle_service.cycle_repo.get_cycle_by_id")
     @patch("app.services.cycle_service.get_logs_by_cycle")
     async def test_found(self, mock_logs, mock_get):
         mock_get.return_value = _make_cycle_row()
@@ -160,7 +174,7 @@ class TestGetCycleById:
         mock_get.return_value = None
 
         with pytest.raises(HTTPException) as exc:
-            await get_cycle_by_id("nonexistent", TEST_USER_ID)
+            await get_cycle_by_id("550e8400-e29b-41d4-a716-4466554400ff", TEST_USER_ID)
         assert exc.value.status_code == 404
 
     @patch("app.services.cycle_service.cycle_repo.get_cycle_by_id")
@@ -173,6 +187,28 @@ class TestGetCycleById:
 
 
 class TestUpdateCycle:
+    @patch("app.services.cycle_service.cycle_repo.update_cycle")
+    async def test_invalid_uuid_returns_400(self, mock_update):
+        with pytest.raises(HTTPException) as exc:
+            await update_cycle(
+                cycle_id="bad-uuid",
+                user_id=TEST_USER_ID,
+                data={"end_date": date(2025, 6, 7)},
+            )
+        assert exc.value.status_code == 400
+        mock_update.assert_not_awaited()
+
+    @patch("app.services.cycle_service.cycle_repo.update_cycle")
+    async def test_empty_uuid_returns_400(self, mock_update):
+        with pytest.raises(HTTPException) as exc:
+            await update_cycle(
+                cycle_id="",
+                user_id=TEST_USER_ID,
+                data={"end_date": date(2025, 6, 7)},
+            )
+        assert exc.value.status_code == 400
+        mock_update.assert_not_awaited()
+
     @patch("app.services.cycle_service.cycle_repo.update_cycle")
     async def test_update_valid(self, mock_update):
         mock_update.return_value = _make_cycle_row(end_date=date(2025, 6, 7))
@@ -190,7 +226,7 @@ class TestUpdateCycle:
 
         with pytest.raises(HTTPException) as exc:
             await update_cycle(
-                cycle_id="nonexistent",
+                cycle_id="550e8400-e29b-41d4-a716-4466554400ff",
                 user_id=TEST_USER_ID,
                 data={"end_date": date(2025, 6, 5)},
             )
@@ -238,6 +274,20 @@ class TestUpdateCycle:
 
 class TestDeleteCycle:
     @patch("app.services.cycle_service.cycle_repo.delete_cycle")
+    async def test_invalid_uuid_returns_400(self, mock_delete):
+        with pytest.raises(HTTPException) as exc:
+            await delete_cycle("bad-uuid", TEST_USER_ID)
+        assert exc.value.status_code == 400
+        mock_delete.assert_not_awaited()
+
+    @patch("app.services.cycle_service.cycle_repo.delete_cycle")
+    async def test_empty_uuid_returns_400(self, mock_delete):
+        with pytest.raises(HTTPException) as exc:
+            await delete_cycle("", TEST_USER_ID)
+        assert exc.value.status_code == 400
+        mock_delete.assert_not_awaited()
+
+    @patch("app.services.cycle_service.cycle_repo.delete_cycle")
     async def test_delete_success(self, mock_delete):
         mock_delete.return_value = True
 
@@ -249,7 +299,7 @@ class TestDeleteCycle:
         mock_delete.return_value = False
 
         with pytest.raises(HTTPException) as exc:
-            await delete_cycle("nonexistent", TEST_USER_ID)
+            await delete_cycle("550e8400-e29b-41d4-a716-4466554400ff", TEST_USER_ID)
         assert exc.value.status_code == 404
 
 

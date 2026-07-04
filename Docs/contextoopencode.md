@@ -280,7 +280,7 @@ Puertos 5173/tcp y 8000/tcp abiertos vía `ufw` para acceso desde red local.
 
 | # | Título | Archivos |
 |---|--------|----------|
-| 64 | Validar `cycle_id` UUID antes de query en `list_logs_by_cycle` | `services/symptom_service.py`, `routers/symptoms.py` |
+| — | (ninguno pendiente) | #64 implementado |
 
 ### 6.3 — Pendiente Madeleine
 

@@ -3,6 +3,7 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 
+from app.core.validators import validate_uuid_or_400
 from app.repositories import cycle_repo
 from app.repositories.daily_log_repo import get_logs_by_cycle
 
@@ -47,6 +48,7 @@ async def get_cycles_by_user(
 
 
 async def get_cycle_by_id(cycle_id: str, user_id: str) -> dict:
+    validate_uuid_or_400(cycle_id, "cycle_id")
     row = await cycle_repo.get_cycle_by_id(cycle_id, user_id)
     if not row:
         raise HTTPException(
@@ -60,6 +62,7 @@ async def get_cycle_by_id(cycle_id: str, user_id: str) -> dict:
 
 
 async def update_cycle(cycle_id: str, user_id: str, data: dict) -> dict:
+    validate_uuid_or_400(cycle_id, "cycle_id")
     if "start_date" in data:
         existing = await cycle_repo.get_cycle_by_start_date(user_id, data["start_date"])
         if existing and str(existing.id) != cycle_id:
@@ -77,6 +80,7 @@ async def update_cycle(cycle_id: str, user_id: str, data: dict) -> dict:
 
 
 async def delete_cycle(cycle_id: str, user_id: str) -> None:
+    validate_uuid_or_400(cycle_id, "cycle_id")
     deleted = await cycle_repo.delete_cycle(cycle_id, user_id)
     if not deleted:
         raise HTTPException(
