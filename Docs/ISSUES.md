@@ -353,9 +353,9 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 
 | Estado | Cantidad | Issues |
 |--------|----------|--------|
-| ✅ Implementado | 6 | #68, #69, #70, #71, #72, #75 |
-| 🔧 Pendiente Daniel | 3 | #63, #66, #74 (verificar) |
-| 🔧 Pendiente Meriyei | 1 | #64 |
+| ✅ Implementado | 6 | #64, #68, #69, #70, #72, #75 |
+| ⚠️ Pendiente validación staging | 1 | #71 (necesita prueba contra Pooler real puerto 6543) |
+| 🔧 Pendiente Daniel | 2 | #63, #66 |
 | 🔧 Pendiente Madeleine | 3 | #65, #67, #73 (verificar) |
 | 🔧 Pendiente Joshua | 5 | #76, #77, #78, #79, #80 |
 
@@ -378,8 +378,8 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 
 | Developer | Issues Sprint 1-9 | Issues Sprint 10 | Total |
 |-----------|:---:|:---:|:---:|
-| Daniel    | 22 | 3 | 25 |
-| Meriyei   | 19 | 1 | 20 |
+| Daniel    | 22 | 6 | 28 |
+| Meriyei   | 19 | 4 | 23 |
 | Madeleine | 13 | 3 | 16 |
 | Joshua    | 8  | 5 | 13 |
 

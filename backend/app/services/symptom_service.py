@@ -20,6 +20,8 @@ from app.repositories.symptom_repo import (
     remove_all_symptoms_from_log,
 )
 
+# Catálogo de síntomas es estático (30 registros), no cambia en runtime.
+# No requiere invalidación: se carga una vez al inicio y se reinicia con cada deploy.
 _catalog_cache: list[dict] | None = None
 
 

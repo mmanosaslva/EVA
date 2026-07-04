@@ -177,7 +177,7 @@ Sección `lg:hidden` debajo del calendario: card de fase actual + grid 2-col (Fl
 
 ## 3. Bugfixes Backend
 
-### 3.1 — PgBouncer + asyncpg prepared statements (Meriyei + Daniel)
+### 3.1 — PgBouncer + asyncpg prepared statements (Daniel)
 
 **Problema:** `DuplicatePreparedStatementError` en cada query a BD vía Supabase pooler (puerto 6543).
 
@@ -188,7 +188,9 @@ engine = create_async_engine(DATABASE_URL, pool_pre_ping=True,
     connect_args={"statement_cache_size": 0})  # ← agregado
 ```
 
-### 3.2 — JWT ES256 vía JWKS (Meriyei + Daniel)
+**Estado:** ⚠️ Implementado, pendiente de validación en staging contra el Transaction Pooler real de Supabase (puerto 6543). SQLite no puede reproducir el error — requiere prueba de integración con despliegue real. Bloqueante para deploy a Render.
+
+### 3.2 — JWT ES256 vía JWKS (Daniel)
 
 **Problema:** `GET /cycles` → 401 incluso con token válido. Supabase emite tokens `ES256` (asimétrico) pero `security.py` solo validaba `HS256` (simétrico).
 
@@ -196,13 +198,15 @@ engine = create_async_engine(DATABASE_URL, pool_pre_ping=True,
 
 Ahora intenta HS256 primero (con `SUPABASE_JWT_SECRET`), y si falla, descarga la clave pública del JWKS de Supabase y valida con `ES256`/`RS256` vía `PyJWKClient`.
 
-### 3.3 — Catálogo de síntomas cacheado (Meriyei + Daniel)
+### 3.3 — Catálogo de síntomas cacheado (Daniel)
 
 **Problema:** `GET /symptoms` demoraba ~1.3s por latencia geográfica a Supabase (AWS us-west-2).
 
 **Archivo:** `backend/app/services/symptom_service.py`
 
 Cache en memoria del catálogo (30 síntomas estáticos). Resultado: **1.3s → 8ms** (162x más rápido).
+
+**Decisión de diseño:** El catálogo es estático (no cambia en runtime). No requiere invalidación — se carga una vez al inicio del proceso y se reinicia con cada deploy. Si en el futuro el catálogo se vuelve mutable, se necesitará un endpoint de invalidación o un TTL.
 
 ### 3.4 — Dependencias faltantes (Madeleine)
 
@@ -280,7 +284,7 @@ Puertos 5173/tcp y 8000/tcp abiertos vía `ufw` para acceso desde red local.
 
 | # | Título | Archivos |
 |---|--------|----------|
-| 64 | Validar `cycle_id` UUID antes de query en `list_logs_by_cycle` | `services/symptom_service.py`, `routers/symptoms.py` |
+| — | (ninguno pendiente) | #64 implementado, #69/#70/#71 corregidos por Daniel |
 
 ### 6.3 — Pendiente Madeleine
 
