@@ -11,20 +11,17 @@ interface UseDailyLogsReturn {
 
 export function useDailyLogs(cycleId: string): UseDailyLogsReturn {
   const [logs, setLogs] = useState<DailyLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const loading = Boolean(cycleId) && fetching;
 
   useEffect(() => {
-    if (!cycleId) {
-      setLoading(false);
-      setLogs([]);
-      return;
-    }
+    if (!cycleId) return;
 
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
+      setFetching(true);
       setError(null);
       try {
         const data = await getDailyLogsByCycle(cycleId);
@@ -37,7 +34,7 @@ export function useDailyLogs(cycleId: string): UseDailyLogsReturn {
         }
       } finally {
         if (!cancelled) {
-          setLoading(false);
+          setFetching(false);
         }
       }
     }
@@ -52,7 +49,7 @@ export function useDailyLogs(cycleId: string): UseDailyLogsReturn {
   const refetch = useCallback(async () => {
     if (!cycleId) return;
 
-    setLoading(true);
+    setFetching(true);
     setError(null);
     try {
       const data = await getDailyLogsByCycle(cycleId);
@@ -60,7 +57,7 @@ export function useDailyLogs(cycleId: string): UseDailyLogsReturn {
     } catch {
       setError("No se pudieron cargar los registros del ciclo");
     } finally {
-      setLoading(false);
+      setFetching(false);
     }
   }, [cycleId]);
 
