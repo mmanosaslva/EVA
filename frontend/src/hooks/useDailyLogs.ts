@@ -15,6 +15,12 @@ export function useDailyLogs(cycleId: string): UseDailyLogsReturn {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!cycleId) {
+      setLoading(false);
+      setLogs([]);
+      return;
+    }
+
     let cancelled = false;
 
     async function load() {
@@ -44,6 +50,8 @@ export function useDailyLogs(cycleId: string): UseDailyLogsReturn {
   }, [cycleId]);
 
   const refetch = useCallback(async () => {
+    if (!cycleId) return;
+
     setLoading(true);
     setError(null);
     try {

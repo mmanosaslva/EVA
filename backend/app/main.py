@@ -7,7 +7,7 @@ from slowapi.errors import RateLimitExceeded
 from app.core.config import settings
 from app.core.rate_limiter import limiter
 from app.core.security_middleware import SecurityHeadersMiddleware
-from app.routers import health, cycles, symptoms, analytics, predictions, sync, insights, export
+from app.routers import health, cycles, symptoms, analytics, predictions, sync, insights, export, auth
 
 
 if settings.SENTRY_DSN:
@@ -71,3 +71,4 @@ app.include_router(predictions.router)
 app.include_router(sync.router)
 app.include_router(insights.router)
 app.include_router(export.router)
+app.include_router(auth.router)

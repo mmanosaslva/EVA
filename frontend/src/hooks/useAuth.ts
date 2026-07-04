@@ -11,6 +11,9 @@ interface UseAuthReturn {
   logout: () => Promise<void>;
   clearError: () => void;
   getToken: () => Promise<string | null>;
+  updateProfile: (data: { full_name?: string }) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -76,6 +79,38 @@ export function useAuth(): UseAuthReturn {
     return data.session?.access_token ?? null;
   }, []);
 
+  const updateProfile = useCallback(async (data: { full_name?: string }) => {
+    const { error } = await supabase.auth.updateUser({ data });
+    if (error) throw error;
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session?.user) {
+      setUser(sessionData.session.user);
+    }
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) throw new Error("No hay sesión activa");
+
+    const response = await fetch(`${API_BASE}/auth/account`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.detail ?? "No se pudo eliminar la cuenta");
+    }
+    await supabase.auth.signOut();
+    setUser(null);
+  }, []);
+
   return {
     user,
     isLoading,
@@ -85,5 +120,8 @@ export function useAuth(): UseAuthReturn {
     logout,
     clearError,
     getToken,
+    updateProfile,
+    updatePassword,
+    deleteAccount,
   };
 }
