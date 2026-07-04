@@ -353,9 +353,9 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 
 | Estado | Cantidad | Issues |
 |--------|----------|--------|
-| ✅ Implementado | 6 | #68, #69, #70, #71, #72, #75 |
+| ✅ Implementado | 7 | #64, #68, #69, #70, #71, #72, #75 |
 | 🔧 Pendiente Daniel | 3 | #63, #66, #74 (verificar) |
-| 🔧 Pendiente Meriyei | 1 | #64 |
+| 🔧 Pendiente Meriyei | 0 | — |
 | 🔧 Pendiente Madeleine | 3 | #65, #67, #73 (verificar) |
 | 🔧 Pendiente Joshua | 5 | #76, #77, #78, #79, #80 |
 

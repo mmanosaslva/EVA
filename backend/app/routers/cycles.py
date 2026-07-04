@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 
 from app.core.security import get_current_user
+from app.core.validators import validate_uuid_or_400
 from app.models.cycle import CycleCreate, CycleUpdate, CycleResponse, CycleListResponse
 from app.services import cycle_service
 
@@ -42,6 +43,7 @@ async def get_cycle(
     cycle_id: str,
     current_user: dict = Depends(get_current_user),
 ):
+    validate_uuid_or_400(cycle_id, "cycle_id")
     return await cycle_service.get_cycle_by_id(
         cycle_id=cycle_id,
         user_id=current_user["user_id"],
@@ -54,6 +56,7 @@ async def update_cycle(
     body: CycleUpdate,
     current_user: dict = Depends(get_current_user),
 ):
+    validate_uuid_or_400(cycle_id, "cycle_id")
     return await cycle_service.update_cycle(
         cycle_id=cycle_id,
         user_id=current_user["user_id"],
@@ -66,6 +69,7 @@ async def delete_cycle(
     cycle_id: str,
     current_user: dict = Depends(get_current_user),
 ):
+    validate_uuid_or_400(cycle_id, "cycle_id")
     await cycle_service.delete_cycle(
         cycle_id=cycle_id,
         user_id=current_user["user_id"],

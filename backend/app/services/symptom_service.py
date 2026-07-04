@@ -2,6 +2,7 @@ from datetime import date
 
 from fastapi import HTTPException, status
 
+from app.core.validators import validate_uuid_or_400
 from app.repositories import cycle_repo
 from app.repositories.daily_log_repo import (
     create_daily_log as repo_create_log,
@@ -43,6 +44,7 @@ async def get_symptom(symptom_id: int) -> dict:
 
 
 async def create_log(data: dict, user_id: str) -> dict:
+    validate_uuid_or_400(data["cycle_id"], "cycle_id")
     cycle = await cycle_repo.get_cycle_by_id(data["cycle_id"], user_id)
     if not cycle:
         raise HTTPException(
@@ -68,6 +70,7 @@ async def create_log(data: dict, user_id: str) -> dict:
 async def list_logs_by_cycle(
     cycle_id: str, user_id: str, limit: int = 50, offset: int = 0
 ) -> tuple[int, list[dict]]:
+    validate_uuid_or_400(cycle_id, "cycle_id")
     cycle = await cycle_repo.get_cycle_by_id(cycle_id, user_id)
     if not cycle:
         raise HTTPException(
