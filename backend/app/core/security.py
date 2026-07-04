@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from jwt import PyJWKClient
+from jwt.exceptions import PyJWKClientError
 
 from app.core.config import settings
 
@@ -47,7 +48,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
                 algorithms=["ES256", "RS256"],
                 audience="authenticated",
             )
+        except PyJWKClientError:
+            raise credentials_exception
         except jwt.PyJWTError:
+            raise credentials_exception
+        except Exception:
             raise credentials_exception
 
     user_id: str = payload.get("sub")
