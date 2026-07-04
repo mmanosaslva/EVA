@@ -172,6 +172,16 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 | 71 | PgBouncer + asyncpg: `DuplicatePreparedStatementError` (statement_cache_size=0 requerido) | Meriyei | `backend` `database` `bug` |
 | 72 | Cache frontend de ciclos y daily-logs para evitar peticiones duplicadas | Daniel | `frontend` `performance` |
 
+### Ollama / LLM — Setup y validación
+
+| # | Título | Asignado | Labels |
+|---|--------|----------|--------|
+| 76 | Documentar instalación y setup de Ollama + modelo `mistral` | Joshua | `ai` `docs` `setup` |
+| 77 | Probar integración `_call_ollama()` end-to-end con Ollama corriendo | Joshua | `ai` `testing` |
+| 78 | Evaluar y ajustar calidad de respuestas del LLM (SYSTEM_PROMPT) | Joshua | `ai` `ml` |
+| 79 | Validar fallback automático a Groq cuando Ollama no está disponible | Joshua | `ai` `testing` |
+| 80 | Agregar health check de Ollama en startup de la app | Joshua | `ai` `devops` |
+
 ### Medio — Deuda técnica
 
 | # | Título | Asignado | Labels |
@@ -275,6 +285,68 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 **Fix:** Extender el patrón para incluir IPs de red local. YA IMPLEMENTADO.  
 **Archivos:** `vite.config.ts:68`
 
+### #76 — Documentar instalación y setup de Ollama + modelo `mistral`
+
+**Síntoma:** No hay documentación clara de cómo instalar Ollama para desarrollo local.  
+**Origen:** El `README.md` menciona Ollama pero no da pasos detallados. `verify_ml_env.py` verifica si Ollama está corriendo pero no ayuda a instalarlo.  
+**Fix:** Crear `Docs/SETUP_OLLAMA.md` con:
+1. Descargar e instalar Ollama desde https://ollama.ai
+2. Iniciar servidor: `ollama serve`
+3. Descargar modelo mistral: `ollama pull mistral` (~4.4 GB)
+4. Verificar con: `ollama run mistral "Hola, ¿cómo estás?"`
+5. Troubleshooting común (puerto 11434 en firewall, espacio en disco, etc.)
+**Archivos:** `Docs/SETUP_OLLAMA.md`, `README.md` (link a la guía)
+
+### #77 — Probar integración `_call_ollama()` end-to-end
+
+**Síntoma:** `POST /insights` → 503 porque Ollama no está corriendo. Nadie ha verificado el flujo completo.  
+**Origen:** El código de `_call_ollama()` existe y es correcto, pero no se ha probado con Ollama real.  
+**Fix:**
+1. Iniciar Ollama con `mistral` cargado
+2. Enviar `POST /insights` con pregunta de prueba: `{"question": "¿Qué síntomas son normales en la fase lútea?"}`
+3. Verificar respuesta 200 con `source: "ollama/mistral"`
+4. Verificar que la respuesta se guarda en BD (`llm_insights` table)
+5. Documentar latencia promedio y calidad de respuesta
+**Archivos:** `services/llm_service.py:44-59`, `POST /insights`
+
+### #78 — Evaluar y ajustar calidad de respuestas del LLM
+
+**Síntoma:** El SYSTEM_PROMPT actual puede producir respuestas genéricas o incorrectas sin ajuste fino.  
+**Origen:** Prompt base no ha sido evaluado con casos reales de usuarias.  
+**Fix:**
+1. Preparar 10 preguntas de prueba representativas (dolor, fatiga, alimentación, ejercicio, fase, ansiedad, etc.)
+2. Evaluar respuestas en: precisión médica, tono empático, longitud (máx 4 oraciones), español correcto
+3. Ajustar parámetros en `llm_service.py`:
+   - `temperature` (0.3-0.9) para balance creatividad/precisión
+   - `num_predict` (200-500) para controlar longitud
+   - `SYSTEM_PROMPT` para mejorar tono y restricciones
+4. Documentar la configuración final recomendada
+**Archivos:** `services/llm_service.py:16-26`, `services/llm_service.py:53`
+
+### #79 — Validar fallback automático a Groq cuando Ollama no está
+
+**Síntoma:** No se ha verificado que el fallback Ollama → Groq funciona correctamente.  
+**Origen:** `get_insight()` intenta Ollama primero, luego Groq. Si ambos fallan, lanza RuntimeError.  
+**Fix:**
+1. Con Ollama corriendo: verificar que usa Ollama (source: `ollama/mistral`)
+2. Detener Ollama: verificar que cae a Groq automáticamente (source: `groq/llama3-8b-8192`)
+3. Sin Ollama y sin `GROQ_API_KEY`: verificar que lanza 503 con mensaje claro
+4. Verificar que `_call_groq()` funciona con la API key actual (ya configurada en `.env`)
+5. Documentar requisitos: tier gratuito de Groq permite ~30 req/min
+**Archivos:** `services/llm_service.py:154-173`, `services/llm_service.py:62-84`
+
+### #80 — Agregar health check de Ollama en startup
+
+**Síntoma:** La app arranca sin verificar si Ollama está disponible. El usuario descubre el problema al preguntar en el chat.  
+**Origen:** No hay verificación proactiva de conectividad con Ollama.  
+**Fix:**
+1. Agregar función `check_ollama_health()` en `llm_service.py` que haga un GET a `OLLAMA_BASE_URL/api/tags`
+2. Llamarla en el evento `startup` de FastAPI (`main.py`)
+3. Si Ollama no responde, loguear WARNING pero no bloquear el arranque
+4. Actualizar `verify_ml_env.py` para que el check de Ollama sea más informativo
+5. Agregar endpoint opcional `GET /health/llm` que reporte estado de Ollama y Groq
+**Archivos:** `services/llm_service.py`, `main.py`, `scripts/verify_ml_env.py`
+
 ---
 
 ## 📋 Resumen Sprint 10
@@ -285,6 +357,7 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 | 🔧 Pendiente Daniel | 3 | #63, #66, #74 (verificar) |
 | 🔧 Pendiente Meriyei | 1 | #64 |
 | 🔧 Pendiente Madeleine | 3 | #65, #67, #73 (verificar) |
+| 🔧 Pendiente Joshua | 5 | #76, #77, #78, #79, #80 |
 
 ### Orden de ejecución
 
@@ -292,8 +365,11 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 1. #63 + #64 (Daniel + Meriyei)  → Elimina el 500 que más aparece en logs
 2. #65 (Madeleine)               → Permite ver errores reales sin bloqueo CORS
 3. #66 (Daniel)                  → HMR funcional desde cualquier dispositivo
-4. #67 (Madeleine)               → UX de insights sin Ollama
-5. #73 + #74 (Madeleine + Daniel) → Deuda técnica pendiente
+4. #76 (Joshua)                  → Documentar instalación de Ollama
+5. #77 + #78 + #79 (Joshua)      → Validar integración LLM completa
+6. #80 (Joshua)                  → Health check de Ollama en startup
+7. #67 (Madeleine)               → UX de insights sin Ollama
+8. #73 + #74 (Madeleine + Daniel) → Deuda técnica pendiente
 ```
 
 ---
@@ -305,5 +381,5 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 | Daniel    | 22 | 3 | 25 |
 | Meriyei   | 19 | 1 | 20 |
 | Madeleine | 13 | 3 | 16 |
-| Joshua    | 8  | 0 | 8  |
+| Joshua    | 8  | 5 | 13 |
 
