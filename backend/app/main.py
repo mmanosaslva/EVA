@@ -6,6 +6,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.core.rate_limiter import limiter
+from app.core.security import preload_jwks
 from app.core.security_middleware import SecurityHeadersMiddleware
 from app.routers import health, cycles, symptoms, analytics, predictions, sync, insights, export
 
@@ -61,6 +62,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    await preload_jwks()
+
 
 app.include_router(health.router)
 app.include_router(cycles.router)
