@@ -1,15 +1,21 @@
-"""Tests de integración para _call_ollama() con Ollama real.
+"""Tests de integración para _call_ollama() con Ollama real y fallback Groq.
 
 Requiere Ollama corriendo con el modelo mistral cargado.
 Si Ollama no está disponible, los tests se saltan automáticamente.
 """
 
+import os
+from unittest.mock import AsyncMock, patch
+
 import httpx
 import pytest
 
-from app.services.llm_service import _call_ollama, get_insight
+from app.core.config import settings
+from app.services.llm_service import _call_ollama, _call_groq, get_insight
 
 OLLAMA_BASE_URL = "http://localhost:11434"
+
+GROQ_API_KEY = settings.GROQ_API_KEY or os.getenv("GROQ_API_KEY", "")
 
 
 def ollama_available() -> bool:
@@ -25,13 +31,18 @@ def ollama_available() -> bool:
 
 
 ollama_ready = ollama_available()
+groq_ready = bool(GROQ_API_KEY)
 
 
-def reason():
+def ollama_reason():
     return "Ollama no está disponible o mistral no está cargado"
 
 
-@pytest.mark.skipif(not ollama_ready, reason=reason())
+def groq_reason():
+    return "GROQ_API_KEY no está configurada en .env"
+
+
+@pytest.mark.skipif(not ollama_ready, reason=ollama_reason())
 class TestOllamaIntegration:
 
     async def test_call_ollama_returns_string(self):
@@ -121,3 +132,88 @@ class TestOllamaIntegration:
             assert result is not None
             assert result["source"].startswith("ollama/")
             assert len(result["insight"]) > 10
+
+
+@pytest.mark.skipif(not groq_ready, reason=groq_reason())
+class TestGroqFallbackIntegration:
+
+    async def test_call_groq_returns_string(self):
+        result = await _call_groq("Responde solo: OK")
+        assert result is not None
+        assert isinstance(result, str)
+        assert len(result) > 0
+
+    async def test_call_groq_responde_en_espanol(self):
+        result = await _call_groq("Responde solo con la palabra: HOLA")
+        assert result is not None
+        assert "HOLA" in result.upper()
+
+    async def test_call_groq_timeout_configured(self):
+        result = await _call_groq("Responde solo: OK")
+        assert result is not None
+
+    @patch("app.services.llm_service._call_ollama", AsyncMock(return_value=None))
+    async def test_groq_source_format(self, mock_ollama):
+        from app.services.llm_service import GROQ_MODEL
+        ctx = {
+            "fase_actual": "lutea",
+            "dia_del_ciclo": 22,
+            "duracion_promedio": 28,
+            "sintomas_frecuentes": ["fatiga"],
+            "intensidad_actual": "3.0",
+            "dias_hasta_siguiente": 5,
+        }
+        result = await get_insight("¿Qué es la fase lútea?", ctx)
+        assert result["source"] == f"groq/{GROQ_MODEL}"
+        assert "reemplaza" in result["disclaimer"]
+
+    @patch("app.services.llm_service._call_ollama", AsyncMock(return_value=None))
+    async def test_groq_response_menstrual_health_related(self, mock_ollama):
+        ctx = {
+            "fase_actual": "ovulacion",
+            "dia_del_ciclo": 14,
+            "duracion_promedio": 28,
+            "sintomas_frecuentes": [],
+            "intensidad_actual": None,
+            "dias_hasta_siguiente": 14,
+        }
+        result = await get_insight("¿Cuándo soy más fértil?", ctx)
+        assert result is not None
+        assert result["source"].startswith("groq/")
+        assert len(result["insight"]) > 20
+
+
+class TestBothUnavailable:
+
+    async def test_runtime_error_when_both_unavailable(self):
+        ctx = {
+            "fase_actual": "lutea",
+            "dia_del_ciclo": 22,
+            "duracion_promedio": 28,
+            "sintomas_frecuentes": [],
+            "intensidad_actual": None,
+            "dias_hasta_siguiente": 5,
+        }
+        with patch("app.services.llm_service._call_ollama", AsyncMock(return_value=None)):
+            with patch("app.services.llm_service._call_groq", AsyncMock(return_value=None)):
+                with pytest.raises(RuntimeError) as exc:
+                    await get_insight("test", ctx)
+                assert "Ollama" in str(exc.value)
+                assert "Groq" in str(exc.value) or "GROQ_API_KEY" in str(exc.value)
+
+    async def test_runtime_error_message_is_helpful(self):
+        ctx = {
+            "fase_actual": "lutea",
+            "dia_del_ciclo": 22,
+            "duracion_promedio": 28,
+            "sintomas_frecuentes": [],
+            "intensidad_actual": None,
+            "dias_hasta_siguiente": 5,
+        }
+        with patch("app.services.llm_service._call_ollama", AsyncMock(return_value=None)):
+            with patch("app.services.llm_service._call_groq", AsyncMock(return_value=None)):
+                with pytest.raises(RuntimeError) as exc:
+                    await get_insight("test", ctx)
+                msg = str(exc.value)
+                assert "ollama serve" in msg
+                assert "GROQ_API_KEY" in msg
