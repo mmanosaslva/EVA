@@ -1,5 +1,6 @@
 import logging
 
+import httpx
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -44,6 +45,26 @@ def _scrub_sentry_event(event: dict) -> dict:
     return event
 
 
+async def _preload_ollama_model() -> None:
+    """Precarga el modelo mistral en memoria para evitar demoras en el primer request."""
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            response = await client.post(
+                f"{settings.OLLAMA_BASE_URL}/api/generate",
+                json={
+                    "model": "mistral",
+                    "prompt": "Responde solo: ok",
+                    "stream": False,
+                    "keep_alive": "30m",
+                    "options": {"num_predict": 5},
+                },
+            )
+            response.raise_for_status()
+            logging.info("Startup OK — modelo mistral precargado en memoria")
+    except Exception as e:
+        logging.warning(f"Startup WARN — No se pudo precargar mistral: {e}")
+
+
 async def _check_ollama_on_startup() -> None:
     try:
         from app.services.llm_service import check_ollama_health
@@ -83,6 +104,7 @@ app.add_middleware(
 async def startup_event() -> None:
     await preload_jwks()
     await _check_ollama_on_startup()
+    await _preload_ollama_model()
 
 app.add_middleware(SecurityHeadersMiddleware)
 

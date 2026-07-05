@@ -49,13 +49,14 @@ Pregunta: {question}
 
 async def _call_ollama(prompt: str) -> Optional[str]:
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.post(
                 f"{OLLAMA_BASE_URL}/api/generate",
                 json={
                     "model": OLLAMA_MODEL,
                     "prompt": f"{SYSTEM_PROMPT}\n\n{prompt}",
                     "stream": False,
+                    "keep_alive": "30m",
                     "options": {"temperature": 0.5, "num_predict": 300},
                 },
             )
@@ -160,7 +161,7 @@ async def build_cycle_context(user_id: str, context_cycles: int = 6) -> dict:
 logger = logging.getLogger(__name__)
 
 
-OLLAMA_TIMEOUT = 5.0
+OLLAMA_TIMEOUT = 10.0
 
 
 async def check_ollama_health() -> dict:
