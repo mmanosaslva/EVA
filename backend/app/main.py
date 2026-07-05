@@ -1,3 +1,5 @@
+import logging
+
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,6 +44,21 @@ def _scrub_sentry_event(event: dict) -> dict:
     return event
 
 
+async def _check_ollama_on_startup() -> None:
+    try:
+        from app.services.llm_service import check_ollama_health
+
+        health = await check_ollama_health()
+        if health["status"] == "ok":
+            logging.info(f"Startup OK — {health['message']}")
+        elif health["status"] == "no_model":
+            logging.warning(f"Startup WARN — {health['message']}")
+        else:
+            logging.warning(f"Startup WARN — {health['message']}")
+    except Exception as e:
+        logging.warning(f"Startup WARN — No se pudo verificar Ollama: {e}")
+
+
 app = FastAPI(
     title="EVA API",
     description="Backend de EVA — Plataforma de Salud Menstrual",
@@ -65,6 +82,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event() -> None:
     await preload_jwks()
+    await _check_ollama_on_startup()
 
 app.add_middleware(SecurityHeadersMiddleware)
 
