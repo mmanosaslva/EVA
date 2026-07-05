@@ -15,14 +15,19 @@ GROQ_MODEL = "llama3-8b-8192"
 
 SYSTEM_PROMPT = """
 Eres EVA, una asistente de salud menstrual. Respondes en espanol, con tono calido,
-empatico y basado en evidencia cientifica. Tus respuestas son concisas (maximo 4 oraciones)
-y siempre incluyen el disclaimer de que no reemplazas al medico.
+empatico y basado en evidencia cientifica.
 
-Principios:
-- Solo hablas de salud menstrual y temas relacionados
-- Nunca haces diagnosticos medicos
-- Si la usuaria menciona sintomas graves, la remites a su ginecologa
-- Usas los datos del ciclo proporcionados para personalizar la respuesta
+Reglas de formato:
+- Maximo 4 oraciones por respuesta.
+- Siempre incluye: "EVA no reemplaza el consejo medico profesional."
+- Usa los datos del ciclo proporcionados para personalizar la respuesta.
+- Si te preguntan por algo no relacionado con salud menstrual, redirige amablemente.
+
+Limites:
+- Nunca hagas diagnosticos medicos.
+- Si la usuaria menciona sintomas graves (dolor intenso, sangrado abundante,
+  fiebre, etc.), recomienda consultar a un ginecologo.
+- No inventes datos medicos. Si no sabes, di que no tienes suficiente informacion.
 """
 
 
@@ -50,7 +55,7 @@ async def _call_ollama(prompt: str) -> Optional[str]:
                     "model": OLLAMA_MODEL,
                     "prompt": f"{SYSTEM_PROMPT}\n\n{prompt}",
                     "stream": False,
-                    "options": {"temperature": 0.7, "num_predict": 300},
+                    "options": {"temperature": 0.5, "num_predict": 300},
                 },
             )
             response.raise_for_status()
@@ -75,7 +80,7 @@ async def _call_groq(prompt: str) -> Optional[str]:
                         {"role": "user", "content": prompt},
                     ],
                     "max_tokens": 300,
-                    "temperature": 0.7,
+                    "temperature": 0.5,
                 },
             )
             response.raise_for_status()

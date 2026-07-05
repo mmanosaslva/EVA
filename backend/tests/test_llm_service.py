@@ -1,4 +1,5 @@
-from datetime import date, timedelta
+import re
+from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -221,6 +222,18 @@ class TestCoherentResponses:
     def test_system_prompt_mentions_cycle_data(self):
         assert "datos del ciclo" in SYSTEM_PROMPT or "datos" in SYSTEM_PROMPT
 
+    def test_system_prompt_no_medical_diagnosis(self):
+        assert "diagnosticos" in SYSTEM_PROMPT or "diagnósticos" in SYSTEM_PROMPT
+
+    def test_system_prompt_redirects_severe_symptoms(self):
+        assert "ginecologo" in SYSTEM_PROMPT or "ginecólogo" in SYSTEM_PROMPT
+
+    def test_system_prompt_does_not_invent_data(self):
+        assert "inventes" in SYSTEM_PROMPT
+
+    def test_system_prompt_max_four_sentences_rule(self):
+        assert "4 oraciones" in SYSTEM_PROMPT
+
     async def test_ollama_response_includes_context(self):
         """Cuando el LLM responde, el prompt incluye datos reales del ciclo,
         no placeholders genéricos."""
@@ -376,3 +389,58 @@ class TestBuildCycleContextComplete:
         ctx_str = str(ctx)
         assert "@" not in ctx_str
         assert "email" not in ctx_str.lower()
+
+
+class TestResponseQuality:
+    """Issue #78: Evalua calidad de respuestas del LLM."""
+
+    def test_temperature_between_03_and_09(self):
+        import inspect
+        source = inspect.getsource(_call_ollama)
+        match = re.search(r'"temperature":\s*([\d.]+)', source)
+        assert match is not None
+        temp = float(match.group(1))
+        assert 0.3 <= temp <= 0.9, f"Temperature {temp} fuera de rango 0.3-0.9"
+
+    def test_num_predict_between_200_and_500(self):
+        import inspect
+        source = inspect.getsource(_call_ollama)
+        match = re.search(r'"num_predict":\s*(\d+)', source)
+        assert match is not None
+        num = int(match.group(1))
+        assert 200 <= num <= 500, f"num_predict {num} fuera de rango 200-500"
+
+    def test_ollama_temperature_matches_groq(self):
+        import inspect
+        ollama_src = inspect.getsource(_call_ollama)
+        groq_src = inspect.getsource(_call_groq)
+        ollama_temp = re.search(r'"temperature":\s*([\d.]+)', ollama_src)
+        groq_temp = re.search(r'"temperature":\s*([\d.]+)', groq_src)
+        assert ollama_temp is not None
+        assert groq_temp is not None
+        assert ollama_temp.group(1) == groq_temp.group(1), \
+            "Ollama y Groq deben usar la misma temperature"
+
+    def test_system_prompt_has_no_invented_data_rule(self):
+        assert "inventes" in SYSTEM_PROMPT
+
+    @pytest.mark.parametrize("keyword", [
+        "calido", "empatico", "espanol", "cientif",
+        "ginecologo", "diagnosticos", "4 oraciones",
+    ])
+    def test_system_prompt_contains_key_terms(self, keyword):
+        assert keyword in SYSTEM_PROMPT
+
+    def test_system_prompt_disclaimer_present(self):
+        assert "no reemplaza" in SYSTEM_PROMPT
+
+    def test_groq_max_tokens_matches_ollama_num_predict(self):
+        import inspect
+        ollama_src = inspect.getsource(_call_ollama)
+        groq_src = inspect.getsource(_call_groq)
+        ollama_num = re.search(r'"num_predict":\s*(\d+)', ollama_src)
+        groq_max = re.search(r'"max_tokens":\s*(\d+)', groq_src)
+        assert ollama_num is not None
+        assert groq_max is not None
+        assert ollama_num.group(1) == groq_max.group(1), \
+            "Ollama num_predict y Groq max_tokens deben coincidir"
