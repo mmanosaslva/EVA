@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
@@ -6,7 +8,13 @@ from jwt.exceptions import PyJWKClientError
 
 from app.core.config import settings
 
+logger = logging.getLogger("app.core.security")
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+JWT_LEEWAY = 60
+
+JWKS_TIMEOUT_SECONDS = 5.0
 
 JWKS_URL = f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json"
 _jwks_client: PyJWKClient | None = None
@@ -15,8 +23,25 @@ _jwks_client: PyJWKClient | None = None
 def _get_jwks_client() -> PyJWKClient:
     global _jwks_client
     if _jwks_client is None:
-        _jwks_client = PyJWKClient(JWKS_URL)
+        _jwks_client = PyJWKClient(
+            JWKS_URL,
+            cache_jwk_set=True,
+            lifespan=300,
+            timeout=JWKS_TIMEOUT_SECONDS,
+        )
     return _jwks_client
+
+
+async def preload_jwks() -> None:
+    try:
+        client = _get_jwks_client()
+        client.fetch_data()
+        logger.info("JWKS preloaded successfully")
+    except Exception:
+        logger.warning(
+            "JWKS preload failed, will retry on first authenticated request",
+            exc_info=True,
+        )
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
@@ -34,6 +59,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
             settings.SUPABASE_JWT_SECRET,
             algorithms=["HS256"],
             audience="authenticated",
+            leeway=JWT_LEEWAY,
         )
     except jwt.PyJWTError:
         pass
@@ -47,6 +73,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
                 signing_key.key,
                 algorithms=["ES256", "RS256"],
                 audience="authenticated",
+                leeway=JWT_LEEWAY,
             )
         except PyJWKClientError:
             raise credentials_exception
