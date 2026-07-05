@@ -1,9 +1,10 @@
 """Verifica que el entorno local de ML esté correctamente configurado."""
 
 import importlib
+import json
 import sys
-import subprocess
 from pathlib import Path
+from urllib.request import urlopen
 
 
 REQUIRED_PACKAGES = {
@@ -84,22 +85,27 @@ def check_joblib() -> bool:
 
 def check_ollama() -> bool:
     try:
-        result = subprocess.run(
-            ["ollama", "list"],
-            capture_output=True, text=True, timeout=15
-        )
-        if result.returncode == 0:
-            models = [l.split()[0] for l in result.stdout.strip().split("\n")[1:] if l.strip()]
-            print(f"  [OK] Ollama disponible. Modelos: {models}")
+        response = urlopen("http://localhost:11434/api/tags", timeout=5)
+        if response.status == 200:
+            data = json.loads(response.read().decode())
+            models = [m["name"] for m in data.get("models", [])]
+            has_mistral = any("mistral" in m for m in models)
+            if has_mistral:
+                print(f"  [OK] Ollama disponible. Modelos: {models}")
+            else:
+                print(f"  [WARN] Ollama disponible pero mistral no cargado. Modelos: {models}")
             return True
         else:
-            print(f"  [WARN] Ollama no responde — {result.stderr.strip()}")
+            print(f"  [WARN] Ollama respondio con status {response.status}")
             return False
-    except FileNotFoundError:
-        print("  [WARN] Ollama no encontrado en PATH")
-        return False
-    except subprocess.TimeoutExpired:
-        print("  [WARN] Ollama no responde (timeout)")
+    except Exception as e:
+        reason = str(e)
+        if "No connection" in reason or "Connection refused" in reason:
+            print("  [WARN] Ollama no esta corriendo. Ejecuta: ollama serve")
+        elif "Name or service not known" in reason:
+            print("  [WARN] Ollama no encontrado. Descarga: https://ollama.ai")
+        else:
+            print(f"  [WARN] Ollama no responde — {reason}")
         return False
 
 

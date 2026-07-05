@@ -1,3 +1,4 @@
+import logging
 from datetime import date, timedelta
 from typing import Optional
 
@@ -154,6 +155,53 @@ async def build_cycle_context(user_id: str, context_cycles: int = 6) -> dict:
         "intensidad_actual": intensidad_actual or "moderada",
         "dias_hasta_siguiente": days_until_next,
     }
+
+
+logger = logging.getLogger(__name__)
+
+
+OLLAMA_TIMEOUT = 5.0
+
+
+async def check_ollama_health() -> dict:
+    """Verifica si Ollama esta disponible y que modelos tiene cargados.
+
+    Retorna dict con status, models y message.
+    No lanza excepcion — siempre retorna un dict descriptivo.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT) as client:
+            response = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+            if response.status_code == 200:
+                data = response.json()
+                models = [m["name"] for m in data.get("models", [])]
+                has_mistral = any("mistral" in m for m in models)
+                return {
+                    "status": "ok" if has_mistral else "no_model",
+                    "models": models,
+                    "message": (
+                        f"Ollama disponible. Modelos: {models}"
+                        if has_mistral
+                        else f"Ollama disponible pero modelo mistral no encontrado. Modelos: {models}"
+                    ),
+                }
+            return {
+                "status": "error",
+                "models": [],
+                "message": f"Ollama respondio con status {response.status_code}",
+            }
+    except httpx.ConnectError:
+        return {
+            "status": "unavailable",
+            "models": [],
+            "message": "Ollama no esta corriendo. Ejecuta: ollama serve",
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "models": [],
+            "message": f"Error verificando Ollama: {e}",
+        }
 
 
 async def get_insight(question: str, cycle_context: dict) -> dict:
