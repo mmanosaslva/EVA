@@ -3,12 +3,14 @@ import { Button } from "../ui/Button";
 
 interface DeleteAccountModalProps {
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
 }
 
 function DeleteAccountModal({ onClose, onConfirm }: DeleteAccountModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [confirmed, setConfirmed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (step === 1) {
     return (
@@ -65,6 +67,9 @@ function DeleteAccountModal({ onClose, onConfirm }: DeleteAccountModalProps) {
           className="w-full rounded-lg border border-border px-4 py-2.5 text-body-sm text-text-main placeholder:text-text-muted focus:border-error focus:outline-none focus:ring-2 focus:ring-error-container/50 mb-4"
           onChange={(e) => setConfirmed(e.target.value === "ELIMINAR")}
         />
+        {error && (
+          <p className="text-body-sm text-error text-center mb-3">{error}</p>
+        )}
         <div className="flex gap-3">
           <Button variant="ghost" className="flex-1" onClick={onClose}>
             Cancelar
@@ -72,10 +77,21 @@ function DeleteAccountModal({ onClose, onConfirm }: DeleteAccountModalProps) {
           <Button
             variant="primary"
             className="flex-1 bg-error hover:bg-error/80 disabled:opacity-50"
-            disabled={!confirmed}
-            onClick={onConfirm}
+            disabled={!confirmed || loading}
+            onClick={async () => {
+              setLoading(true);
+              setError(null);
+              try {
+                await onConfirm();
+              } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : "Error al eliminar cuenta";
+                setError(message);
+                setLoading(false);
+                setStep(1);
+              }
+            }}
           >
-            Eliminar cuenta
+            {loading ? "Eliminando..." : "Eliminar cuenta"}
           </Button>
         </div>
       </div>

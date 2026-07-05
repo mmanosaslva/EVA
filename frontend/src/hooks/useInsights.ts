@@ -54,7 +54,7 @@ export function useInsights(): UseInsightsReturn {
       };
       setMessages((prev) => [...prev, evaMsg]);
     } catch {
-      setError("No se pudo obtener respuesta. Intentá de nuevo.");
+      setError("EVA no está disponible en este momento. Asegurate de tener Ollama instalado y corriendo localmente (https://ollama.ai), o configurá una API key de Groq en el archivo .env.");
     } finally {
       setSending(false);
     }

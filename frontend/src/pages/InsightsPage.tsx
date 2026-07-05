@@ -44,7 +44,7 @@ export default function InsightsPage() {
     <div className="flex flex-col h-[100dvh] bg-surface">
       <div className="px-4 py-4 border-b border-border-subtle">
         <h1 className="text-headline-sm text-center">
-          Hablá con EVA
+          Asistente EVA
         </h1>
         <p className="text-label-md text-text-muted text-center mt-0.5">
           Tu asistente de salud menstrual

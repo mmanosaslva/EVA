@@ -33,10 +33,10 @@ async def create_insight(
             question=body.question,
             cycle_context=cycle_context,
         )
-    except RuntimeError:
+    except RuntimeError as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI service temporarily unavailable. Please try again later.",
+            detail=str(e),
         )
 
     await insight_repo.save_insight(

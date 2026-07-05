@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.rate_limiter import limiter
 from app.core.security import preload_jwks
 from app.core.security_middleware import SecurityHeadersMiddleware
-from app.routers import health, cycles, symptoms, analytics, predictions, sync, insights, export
+from app.routers import health, cycles, symptoms, analytics, predictions, sync, insights, export, auth
 
 
 if settings.SENTRY_DSN:
@@ -53,8 +53,6 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app.add_middleware(SecurityHeadersMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -68,6 +66,7 @@ app.add_middleware(
 async def startup_event() -> None:
     await preload_jwks()
 
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(health.router)
 app.include_router(cycles.router)
@@ -78,3 +77,4 @@ app.include_router(predictions.router)
 app.include_router(sync.router)
 app.include_router(insights.router)
 app.include_router(export.router)
+app.include_router(auth.router)

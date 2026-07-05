@@ -170,4 +170,8 @@ async def get_insight(question: str, cycle_context: dict) -> dict:
             "disclaimer": "EVA no reemplaza el consejo medico profesional.",
         }
 
-    raise RuntimeError("LLM service unavailable")
+    raise RuntimeError(
+        "LLM service unavailable. Ollama (http://localhost:11434) must be running "
+        "with the 'mistral' model loaded. Run: ollama serve && ollama pull mistral. "
+        "If Ollama is not available, set GROQ_API_KEY in .env as fallback."
+    )
