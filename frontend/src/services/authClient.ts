@@ -58,6 +58,42 @@ class AuthClient {
     return this._getToken();
   }
 
+  async forgotPassword(email: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) throw new Error(await this._errorMessage(res));
+  }
+
+  async resetPassword(token: string, password: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, password }),
+    });
+    if (!res.ok) throw new Error(await this._errorMessage(res));
+  }
+
+  async requestVerification(email: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/auth/request-verify-token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) throw new Error(await this._errorMessage(res));
+  }
+
+  async verify(token: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/auth/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    if (!res.ok) throw new Error(await this._errorMessage(res));
+  }
+
   isAuthenticated(): boolean {
     return this._getToken() !== null;
   }
