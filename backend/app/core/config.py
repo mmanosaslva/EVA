@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     SENTRY_DSN: str = ""
     CORS_ORIGINS: str = "http://localhost:5173"
     VERCEL_URL: str = ""
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = ""
+    FRONTEND_URL: str = "http://localhost:5173"
     ENVIRONMENT: str = "development"
     APP_VERSION: str = "1.0.0"
 
