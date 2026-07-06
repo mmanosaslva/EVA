@@ -1,25 +1,29 @@
-import asyncio
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import logging
 
+import requests
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 async def _send_email(to_email: str, subject: str, html_body: str):
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = settings.SMTP_FROM
-    msg["To"] = to_email
-    msg.attach(MIMEText(html_body, "html", "utf-8"))
-
-    def _send():
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.sendmail(settings.SMTP_FROM, to_email, msg.as_string())
-
-    await asyncio.to_thread(_send)
+    r = requests.post(
+        "https://api.brevo.com/v3/smtp/email",
+        headers={
+            "api-key": settings.BREVO_API_KEY,
+            "Content-Type": "application/json",
+        },
+        json={
+            "sender": {"email": settings.SMTP_FROM},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "htmlContent": html_body,
+        },
+        timeout=15,
+    )
+    if r.status_code != 201:
+        raise Exception(f"Brevo error {r.status_code}: {r.text}")
+    logger.info("Brevo: email enviado a %s (messageId: %s)", to_email, r.json().get("messageId"))
 
 
 async def send_reset_password_email(email: str, token: str):
