@@ -1,12 +1,6 @@
-import { supabase } from "../lib/supabaseClient";
+import { authClient } from "./authClient";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 interface ApiClientOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -18,12 +12,8 @@ export async function apiClient<T = unknown>(
   options: ApiClientOptions = {},
 ): Promise<T> {
   const { method = "GET", body } = options;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(await getAuthHeaders()),
-  };
+  const config: RequestInit = { method, headers: { "Content-Type": "application/json" } };
 
-  const config: RequestInit = { method, headers };
   if (body) {
     config.body = JSON.stringify(body);
   }
@@ -31,7 +21,7 @@ export async function apiClient<T = unknown>(
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE}${path}`, config);
+    response = await authClient.fetchWithAuth(`${API_BASE}${path}`, config);
   } catch {
     throw new Error(
       `No se pudo conectar con el servidor (${API_BASE}). Verificá que el backend esté corriendo.`,
