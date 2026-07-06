@@ -32,7 +32,7 @@ class AuthClient {
       if (msg === "LOGIN_BAD_CREDENTIALS") {
         throw new Error("Email o contraseña incorrectos.");
       }
-      throw new Error(msg);
+      throw new Error("Error al iniciar sesión. Inténtalo de nuevo.");
     }
 
     const { access_token } = (await res.json()) as LoginResponse;
@@ -46,7 +46,16 @@ class AuthClient {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, is_active: true, is_superuser: false, is_verified: false }),
     });
-    if (!res.ok) throw new Error(await this._errorMessage(res));
+    if (!res.ok) {
+      const msg = await this._errorMessage(res);
+      if (msg === "REGISTER_USER_ALREADY_EXISTS") {
+        throw new Error("Ya existe una cuenta con este email.");
+      }
+      if (msg === "REGISTER_INVALID_PASSWORD") {
+        throw new Error("La contraseña no cumple con los requisitos mínimos.");
+      }
+      throw new Error("No se pudo completar el registro. Inténtalo de nuevo.");
+    }
   }
 
   async logout(): Promise<void> {
@@ -140,6 +149,9 @@ class AuthClient {
   private async _errorMessage(res: Response): Promise<string> {
     try {
       const body = await res.json();
+      if (Array.isArray(body.detail)) {
+        return body.detail.map((d: { msg?: string }) => d.msg || "").join(". ") || `Error ${res.status}`;
+      }
       return body.detail || `Error ${res.status}`;
     } catch {
       return `Error del servidor (${res.status})`;
