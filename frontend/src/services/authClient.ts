@@ -24,21 +24,29 @@ class AuthClient {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: formData,
     });
-    if (!res.ok) throw new Error(await this._errorMessage(res));
+    if (!res.ok) {
+      const msg = await this._errorMessage(res);
+      if (msg === "LOGIN_USER_NOT_VERIFIED") {
+        throw new Error("Debes verificar tu correo antes de iniciar sesión. Revisa tu bandeja de entrada.");
+      }
+      if (msg === "LOGIN_BAD_CREDENTIALS") {
+        throw new Error("Email o contraseña incorrectos.");
+      }
+      throw new Error(msg);
+    }
 
     const { access_token } = (await res.json()) as LoginResponse;
     this._saveToken(access_token);
     return this.me();
   }
 
-  async register(email: string, password: string): Promise<AuthUser> {
+  async register(email: string, password: string): Promise<void> {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, is_active: true, is_superuser: false, is_verified: false }),
     });
     if (!res.ok) throw new Error(await this._errorMessage(res));
-    return this.login(email, password);
   }
 
   async logout(): Promise<void> {

@@ -46,8 +46,7 @@ export function useAuth(): UseAuthReturn {
   const register = useCallback(async (email: string, password: string) => {
     setAuthError(null);
     try {
-      const u = await authClient.register(email, password);
-      setUser(u);
+      await authClient.register(email, password);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Error al registrarse";
       setAuthError(msg);
