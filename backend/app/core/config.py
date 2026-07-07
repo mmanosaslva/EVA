@@ -2,17 +2,18 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    SECRET_KEY: str = ""
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     DATABASE_URL: str = ""
     TEST_DATABASE_URL: str = ""
-    SUPABASE_URL: str = ""
-    SUPABASE_ANON_KEY: str = ""
-    SUPABASE_JWT_SECRET: str = ""
-    SUPABASE_SERVICE_ROLE_KEY: str = ""
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     GROQ_API_KEY: str = ""
     SENTRY_DSN: str = ""
     CORS_ORIGINS: str = "http://localhost:5173"
     VERCEL_URL: str = ""
+    BREVO_API_KEY: str = ""
+    SMTP_FROM: str = ""
+    FRONTEND_URL: str = "http://localhost:5173"
     ENVIRONMENT: str = "development"
     APP_VERSION: str = "1.0.0"
 

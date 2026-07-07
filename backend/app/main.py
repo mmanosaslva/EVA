@@ -3,11 +3,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.rate_limiter import limiter
 from app.core.security_middleware import SecurityHeadersMiddleware
-from app.routers import health, cycles, symptoms, analytics, predictions, sync, insights, export, auth
+from app.routers import health, cycles, symptoms, analytics, predictions, sync, insights, export
+from app.auth.db import create_db_and_tables
+from app.core.db import engine
+from app.auth.setup import fastapi_users, auth_backend
+from app.auth.schemas import UserRead, UserCreate, UserUpdate
 
 
 if settings.SENTRY_DSN:
@@ -49,6 +54,15 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+
+@app.on_event("startup")
+async def startup():
+    await create_db_and_tables()
+    # Pre-warm pool: wake up Neon compute + keep connections ready
+    async with engine.connect() as conn:
+        await conn.execute(text("SELECT 1"))
+
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -71,4 +85,27 @@ app.include_router(predictions.router)
 app.include_router(sync.router)
 app.include_router(insights.router)
 app.include_router(export.router)
-app.include_router(auth.router)
+
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]
+)
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_reset_password_router(),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_verify_router(UserRead),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserUpdate),
+    prefix="/users",
+    tags=["users"],
+)

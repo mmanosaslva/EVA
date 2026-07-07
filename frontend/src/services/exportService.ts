@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabaseClient";
+import { authClient } from "./authClient";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
@@ -14,8 +14,7 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 async function authFetch(path: string): Promise<Response> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  const token = await authClient.getToken();
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
 

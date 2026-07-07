@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import type { User } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabaseClient";
+import { authClient, type AuthUser } from "../services/authClient";
 
 interface UseAuthReturn {
-  user: User | null;
+  user: AuthUser | null;
   isLoading: boolean;
   authError: string | null;
   login: (email: string, password: string) => Promise<void>;
@@ -17,67 +16,55 @@ interface UseAuthReturn {
 }
 
 export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    if (authClient.isAuthenticated()) {
+      authClient.me()
+        .then(setUser)
+        .catch(() => {
+          setUser(null);
+          authClient.logout();
+        })
+        .finally(() => setIsLoading(false));
+    } else {
       setIsLoading(false);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
+    }
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     setAuthError(null);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      if (error.message.includes("Invalid login credentials")) {
-        setAuthError("Email o contraseña incorrectos");
-      } else {
-        setAuthError(error.message);
-      }
-      throw error;
+    try {
+      const u = await authClient.login(email, password);
+      setUser(u);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error al iniciar sesión";
+      setAuthError(msg);
+      throw e;
     }
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {
     setAuthError(null);
-    const { error } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      if (error.message.includes("already registered")) {
-        setAuthError("Este email ya está registrado");
-      } else {
-        setAuthError(error.message);
-      }
-      throw error;
+    try {
+      await authClient.register(email, password);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error al registrarse";
+      setAuthError(msg);
+      throw e;
     }
   }, []);
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut();
+    await authClient.logout();
     setUser(null);
   }, []);
 
   const clearError = useCallback(() => setAuthError(null), []);
 
-  const getToken = useCallback(async (): Promise<string | null> => {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ?? null;
-  }, []);
+  const getToken = useCallback(async () => authClient.getToken(), []);
 
   const updateProfile = useCallback(async (data: { full_name?: string }) => {
     const { error } = await supabase.auth.updateUser({ data });
