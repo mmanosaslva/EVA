@@ -31,6 +31,7 @@ function App() {
           <Route path="/symptoms" element={<SymptomsPage />} />
           <Route path="/insights" element={<InsightsPage />} />
           <Route path="/export" element={<ExportPage />} />
+          <Route path="/config" element={<ExportPage />} />
           <Route path="/demo" element={<DemoPage />} />
         </Route>
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

@@ -5,6 +5,7 @@ const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 interface ApiClientOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
+  timeout?: number;
 }
 
 export async function apiClient<T = unknown>(
@@ -25,7 +26,10 @@ export async function apiClient<T = unknown>(
   } catch {
     throw new Error(
       `No se pudo conectar con el servidor (${API_BASE}). Verificá que el backend esté corriendo.`,
+      { cause: err },
     );
+  } finally {
+    clearTimeout(timer);
   }
 
   if (response.status === 204) {

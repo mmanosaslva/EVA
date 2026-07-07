@@ -4,7 +4,10 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
-  server: { host: true },
+  server: {
+    host: true,
+    hmr: { host: "0.0.0.0" },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -38,14 +41,14 @@ export default defineConfig({
         ],
         screenshots: [
         {
-          src: "/screenshots/eva-screenshot.png",
-          sizes: "1024x1792",
+          src: "/screenshots/Eva_Screenshoot.png",
+          sizes: "907x1734",
           type: "image/png",
           form_factor: "narrow"
         },
         {
-          src: "/screenshots/eva-screenshot-carga.png",
-          sizes: "1024x1792",
+          src: "/screenshots/Eva_screenshoot_carga.png",
+          sizes: "906x1735",
           type: "image/png",
           form_factor: "narrow"
         }
