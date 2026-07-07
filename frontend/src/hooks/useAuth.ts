@@ -67,23 +67,34 @@ export function useAuth(): UseAuthReturn {
   const getToken = useCallback(async () => authClient.getToken(), []);
 
   const updateProfile = useCallback(async (data: { full_name?: string }) => {
-    const { error } = await supabase.auth.updateUser({ data });
-    if (error) throw error;
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData.session?.user) {
-      setUser(sessionData.session.user);
-    }
+    const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+    const token = await authClient.getToken();
+    if (!token) throw new Error("No hay sesión activa");
+    const res = await fetch(`${API_BASE}/users/me`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("No se pudo actualizar el perfil");
+    const updated = await authClient.me();
+    setUser(updated);
   }, []);
 
   const updatePassword = useCallback(async (newPassword: string) => {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) throw error;
+    const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+    const token = await authClient.getToken();
+    if (!token) throw new Error("No hay sesión activa");
+    const res = await fetch(`${API_BASE}/users/me`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ password: newPassword }),
+    });
+    if (!res.ok) throw new Error("No se pudo actualizar la contraseña");
   }, []);
 
   const deleteAccount = useCallback(async () => {
     const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
+    const token = await authClient.getToken();
     if (!token) throw new Error("No hay sesión activa");
 
     const response = await fetch(`${API_BASE}/auth/account`, {
@@ -94,7 +105,7 @@ export function useAuth(): UseAuthReturn {
       const body = await response.json().catch(() => ({}));
       throw new Error(body.detail ?? "No se pudo eliminar la cuenta");
     }
-    await supabase.auth.signOut();
+    await authClient.logout();
     setUser(null);
   }, []);
 
