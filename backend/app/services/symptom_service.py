@@ -17,6 +17,7 @@ from app.repositories.symptom_repo import (
     get_all_symptoms,
     get_symptom_by_id,
     get_symptoms_by_log,
+    get_symptoms_by_log_ids,
     add_symptoms_to_log,
     remove_all_symptoms_from_log,
 )
@@ -81,11 +82,15 @@ async def list_logs_by_cycle(
         )
     total = await count_logs_by_cycle(cycle_id)
     rows = await get_logs_by_cycle_paginated(cycle_id, limit, offset)
+
+    # Batch fetch symptoms for ALL logs in one query (avoids N+1)
+    log_ids = [str(dict(row._mapping)["id"]) for row in rows]
+    symptoms_map = await get_symptoms_by_log_ids(log_ids)
+
     logs = []
     for row in rows:
         log = _log_row_to_dict(row)
-        symptoms = await get_symptoms_by_log(log["id"])
-        log["symptoms"] = [_symptom_log_to_dict(s) for s in symptoms]
+        log["symptoms"] = [_symptom_log_to_dict(s) for s in symptoms_map.get(log["id"], [])]
         logs.append(log)
     return total, logs
 
