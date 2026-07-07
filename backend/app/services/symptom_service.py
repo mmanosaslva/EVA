@@ -171,7 +171,10 @@ async def _enrich_log_with_symptoms(row) -> dict:
 
 
 def _log_row_to_dict(row) -> dict:
-    data = dict(row._mapping)
+    if isinstance(row, dict):
+        data = row.copy()
+    else:
+        data = dict(row._mapping)
     data["id"] = str(data["id"])
     data["cycle_id"] = str(data["cycle_id"])
     data["date"] = data["date"].isoformat() if isinstance(data.get("date"), date) else data.get("date")
