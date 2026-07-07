@@ -3,10 +3,6 @@ from datetime import date
 from pathlib import Path
 from typing import Optional
 
-import joblib
-import pandas as pd
-from prophet import Prophet
-
 logger = logging.getLogger(__name__)
 
 MODELS_DIR = Path("ml_models")
@@ -19,7 +15,9 @@ def get_model_path(user_id: str) -> Path:
     return MODELS_DIR / f"user_{user_id}.pkl"
 
 
-def _evaluate_model(model: Prophet, df: pd.DataFrame) -> float:
+def _evaluate_model(model, df) -> float:
+    from prophet import Prophet
+
     if len(df) < 4:
         return 99.0
 
@@ -45,6 +43,10 @@ def _evaluate_model(model: Prophet, df: pd.DataFrame) -> float:
 
 
 def train_model(user_id: str, cycles_data: list[dict]) -> dict:
+    import joblib
+    import pandas as pd
+    from prophet import Prophet
+
     if len(cycles_data) < MIN_CYCLES_TO_TRAIN:
         raise ValueError(
             f"Se necesitan al menos {MIN_CYCLES_TO_TRAIN} ciclos para entrenar. "
@@ -91,6 +93,9 @@ def train_model(user_id: str, cycles_data: list[dict]) -> dict:
 
 
 def predict_next_cycle(user_id: str, last_cycle_start: date) -> Optional[dict]:
+    import joblib
+    import pandas as pd
+
     model_path = get_model_path(user_id)
 
     if not model_path.exists():
