@@ -20,7 +20,7 @@ export default function Dashboard() {
     [cycles],
   );
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Usuaria";
+  const displayName = user?.email?.split("@")[0] ?? "Usuaria";
 
   if (loading) {
     return (

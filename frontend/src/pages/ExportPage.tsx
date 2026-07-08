@@ -26,7 +26,7 @@ export default function ExportPage() {
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [openSection, setOpenSection] = useState<"perfil" | "exportar" | "privacidad" | null>("perfil");
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Usuaria";
+  const displayName = user?.email?.split("@")[0] ?? "Usuaria";
   const email = user?.email ?? "";
 
   const handleDownloadCsv = async () => {

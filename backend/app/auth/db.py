@@ -1,5 +1,3 @@
-from collections.abc import AsyncGenerator
-
 from fastapi import Depends
 from fastapi_users.db import SQLAlchemyBaseUserTableUUID, SQLAlchemyUserDatabase
 from sqlalchemy.orm import DeclarativeBase

@@ -15,7 +15,7 @@ export function TopAppBar() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const currentTitle = pageTitles[location.pathname] ?? "EVA";
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "U";
+  const displayName = user?.email?.split("@")[0] ?? "U";
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
