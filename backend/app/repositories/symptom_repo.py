@@ -77,7 +77,8 @@ async def get_symptoms_by_log_ids(log_ids: list[str]) -> dict[str, list]:
 
     symptoms_by_log: dict[str, list] = defaultdict(list)
     for row in rows:
-        symptoms_by_log[str(row["log_id"])].append(dict(row._mapping))
+        m = row._mapping
+        symptoms_by_log[str(m["log_id"])].append(dict(m))
     return dict(symptoms_by_log)
 
 

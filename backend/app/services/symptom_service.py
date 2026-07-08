@@ -185,8 +185,12 @@ def _log_row_to_dict(row) -> dict:
 
 
 def _symptom_catalog_to_dict(row) -> dict:
+    if isinstance(row, dict):
+        return row.copy()
     return dict(row._mapping)
 
 
 def _symptom_log_to_dict(row) -> dict:
+    if isinstance(row, dict):
+        return row.copy()
     return dict(row._mapping)
