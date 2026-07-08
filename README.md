@@ -29,8 +29,8 @@ EVA soluciona estos problemas con datos locales primero (sin venta a terceros), 
 | Persistencia local | IndexedDB (Dexie.js) |
 | Backend | Python 3.11 + FastAPI |
 | ORM / Query builder | SQLAlchemy Core |
-| Base de datos | PostgreSQL via Supabase |
-| Autenticación | Supabase Auth + JWT |
+| Base de datos | PostgreSQL via Neon |
+| Autenticación | fastapi-users + JWT |
 | ML predicción | Prophet (Meta) + scikit-learn |
 | Serialización ML | joblib |
 | LLM local | Ollama (Mistral 7B / Llama 3) |
@@ -53,7 +53,7 @@ EVA soluciona estos problemas con datos locales primero (sin venta a terceros), 
 - Node.js 18+
 - Python 3.11+
 - Git
-- Cuenta en Supabase (gratuita)
+- Cuenta en Neon (gratuita)
 - Ollama instalado localmente (opcional para desarrollo)
 
 ### Frontend
@@ -62,7 +62,7 @@ EVA soluciona estos problemas con datos locales primero (sin venta a terceros), 
 cd frontend
 npm install
 cp .env.example .env.local
-# Editar .env.local con VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY
+# Editar .env.local con VITE_API_URL
 npm run dev
 # App en http://localhost:5173
 ```
@@ -75,7 +75,7 @@ python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-# Editar .env con DATABASE_URL, SUPABASE_JWT_SECRET, etc.
+# Editar .env con DATABASE_URL, SECRET_KEY, etc.
 uvicorn app.main:app --reload --port 8000
 # API en http://localhost:8000
 # Docs en http://localhost:8000/docs
@@ -85,9 +85,9 @@ uvicorn app.main:app --reload --port 8000
 
 **Backend `.env`:**
 ```env
-DATABASE_URL=postgresql://...@db.supabase.co:5432/postgres
-SUPABASE_URL=https://xxxx.supabase.co
-SUPABASE_JWT_SECRET=your-jwt-secret
+DATABASE_URL=postgresql://user:pass@ep-bold-bread-acya5dpp-pooler.sa-east-1.aws.neon.tech/eva?statement_cache_size=0
+SECRET_KEY=your-secret-key-change-in-production-min-32-chars
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 OLLAMA_BASE_URL=http://localhost:11434
 GROQ_API_KEY=gsk_...  # fallback gratuito
 ENVIRONMENT=development
@@ -95,8 +95,6 @@ ENVIRONMENT=development
 
 **Frontend `.env.local`:**
 ```env
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
 VITE_API_URL=http://localhost:8000
 ```
 
