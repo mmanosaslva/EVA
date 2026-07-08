@@ -31,10 +31,12 @@ export async function apiClient<T = unknown>(
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new Error(
         `La solicitud excedió el tiempo de espera (${timeout / 1000}s). Revisá tu conexión.`,
+        { cause: err },
       );
     }
     throw new Error(
       `No se pudo conectar con el servidor (${API_BASE}). Verificá que el backend esté corriendo.`,
+      { cause: err },
     );
   } finally {
     clearTimeout(timer);

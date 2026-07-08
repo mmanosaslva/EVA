@@ -21,17 +21,25 @@ export function useAuth(): UseAuthReturn {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authClient.isAuthenticated()) {
-      authClient.me()
-        .then(setUser)
-        .catch(() => {
-          setUser(null);
-          authClient.logout();
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
+    let cancelled = false;
+
+    async function checkAuth() {
+      if (authClient.isAuthenticated()) {
+        try {
+          const user = await authClient.me();
+          if (!cancelled) setUser(user);
+        } catch {
+          if (!cancelled) {
+            setUser(null);
+            authClient.logout();
+          }
+        }
+      }
+      if (!cancelled) setIsLoading(false);
     }
+
+    checkAuth();
+    return () => { cancelled = true; };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {

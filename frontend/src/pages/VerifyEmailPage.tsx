@@ -14,30 +14,27 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     const token = searchParams.get("token");
-
-    if (!token) {
-      setState({ status: "error", message: "Enlace inválido." });
-      return;
-    }
-
     let cancelled = false;
 
-    authClient
-      .verify(token)
-      .then(() => {
+    async function verify() {
+      if (!token) {
+        if (!cancelled) setState({ status: "error", message: "Enlace inválido." });
+        return;
+      }
+      try {
+        await authClient.verify(token);
         if (!cancelled) setState({ status: "success" });
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled)
           setState({
             status: "error",
             message: "El enlace de verificación no es válido o ha expirado.",
           });
-      });
+      }
+    }
 
-    return () => {
-      cancelled = true;
-    };
+    verify();
+    return () => { cancelled = true; };
   }, [searchParams]);
 
   return (

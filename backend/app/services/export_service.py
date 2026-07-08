@@ -6,7 +6,7 @@ from typing import Optional
 
 from app.repositories import cycle_repo
 from app.repositories.daily_log_repo import get_logs_by_cycle
-from app.repositories.symptom_repo import get_symptoms_by_log
+from app.repositories.symptom_repo import get_symptoms_by_log_ids
 from app.services.analytics_service import get_summary, get_symptoms_analytics
 from app.services.prediction_service import predict_next_cycle
 
@@ -32,8 +32,7 @@ async def _get_export_data(user_id: str, from_date: Optional[date] = None, to_da
             log_dict["_cycle"] = cycles_by_id[cid]
             all_logs.append(log_dict)
 
-    log_ids = [str(l["id"]) for l in all_logs]
-    from app.repositories.symptom_repo import get_symptoms_by_log_ids
+    log_ids = [str(log["id"]) for log in all_logs]
     symptoms_map = await get_symptoms_by_log_ids(log_ids)
 
     data = []

@@ -95,6 +95,7 @@ def train_model(user_id: str, cycles_data: list[dict]) -> dict:
 def predict_next_cycle(user_id: str, last_cycle_start: date) -> Optional[dict]:
     import joblib
     import pandas as pd
+    from prophet import Prophet
 
     model_path = get_model_path(user_id)
 
