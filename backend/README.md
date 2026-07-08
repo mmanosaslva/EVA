@@ -2,7 +2,7 @@
 
 API REST de EVA, plataforma de salud menstrual.
 
-Stack: FastAPI + PostgreSQL (Supabase) + Prophet + Ollama
+Stack: FastAPI + PostgreSQL (Neon) + Prophet + Ollama
 
 ---
 
