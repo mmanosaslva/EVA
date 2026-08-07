@@ -18,13 +18,13 @@ test.describe("Regresión completa — Flujo 1: Registro → ciclo → síntomas
 
   test("navega a síntomas y carga el formulario", async ({ page }) => {
     await page.goto("/symptoms");
-    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByRole("tab", { name: /registrar/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Síntomas" }).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("button", { name: /registrar/i })).toBeVisible({ timeout: 10000 });
   });
 
   test("dashboard carga y muestra elementos principales", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: /panel|dashboard|eva/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "EVA" })).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -35,7 +35,7 @@ test.describe("Regresión completa — Flujo 2: Offline → síntoma → reconec
 
   test("desconecta red, muestra indicador offline, reconecta", async ({ page }) => {
     await page.goto("/dashboard");
-    await expect(page.getByRole("heading", { name: /panel|dashboard|eva/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "EVA" })).toBeVisible({ timeout: 15000 });
 
     await page.context().setOffline(true);
     await expect(page.getByRole("alert")).toBeVisible({ timeout: 5000 });
@@ -55,7 +55,7 @@ test.describe("Regresión completa — Flujo 3: Exportación CSV y PDF", () => {
     await expect(page.getByRole("heading", { name: /configuración/i })).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(/descargar mis datos/i)).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/informe médico/i)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/privacidad/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: /privacidad/i })).toBeVisible({ timeout: 10000 });
   });
 
   test("botones de exportación están presentes y habilitados", async ({ page }) => {
@@ -113,12 +113,13 @@ test.describe("Regresión completa — Flujo 4: Chat EVA", () => {
 test.describe("Regresión completa — Flujo 5: Login y autenticación", () => {
   test("página de login carga correctamente", async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByRole("heading", { name: /iniciar sesión/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "EVA" })).toBeVisible({ timeout: 15000 });
     await expect(page.getByLabel(/email/i)).toBeVisible();
     await expect(page.getByLabel(/contraseña/i)).toBeVisible();
   });
 
   test("redirige a login sin sesión", async ({ page }) => {
+    await page.goto("/login");
     await clearSupabaseAuth(page);
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/login/, { timeout: 15000 });

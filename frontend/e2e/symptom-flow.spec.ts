@@ -8,15 +8,15 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("muestra la página de síntomas con el formulario de registro", async ({ page }) => {
     await page.goto("/symptoms");
-    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
-    await expect(page.getByRole("tab", { name: /registrar/i })).toBeVisible();
-    await expect(page.getByRole("tab", { name: /historial/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Síntomas" }).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("button", { name: /registrar/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /historial/i })).toBeVisible();
     await expect(page.getByText("Nuevo registro")).toBeVisible();
   });
 
   test("permite seleccionar un síntoma y ajustar intensidad", async ({ page }) => {
     await page.goto("/symptoms");
-    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "Síntomas" }).first()).toBeVisible({ timeout: 15000 });
 
     const symptomBtn = page.getByRole("button", { name: /dolor abdominal/i });
     await expect(symptomBtn).toBeVisible({ timeout: 10000 });
@@ -36,22 +36,21 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("permite seleccionar nivel de flujo", async ({ page }) => {
     await page.goto("/symptoms");
-    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "Síntomas" }).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("button", { name: /medio/i })).toBeVisible({ timeout: 10000 });
 
-    const flowBtn = page.getByRole("button", { name: /moderad/i });
-    await expect(flowBtn).toBeVisible({ timeout: 10000 });
-
+    const flowBtn = page.getByRole("button", { name: /medio/i });
     await flowBtn.click();
     await expect(flowBtn).toHaveAttribute("aria-pressed", "true");
   });
 
   test("completa el formulario y guarda el registro", async ({ page }) => {
     await page.goto("/symptoms");
-    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "Síntomas" }).first()).toBeVisible({ timeout: 15000 });
 
     await page.getByRole("button", { name: /dolor abdominal/i }).click();
 
-    await page.getByRole("button", { name: /moderad/i }).click();
+    await page.getByRole("button", { name: /medio/i }).click();
 
     const tempInput = page.getByLabel(/temperatura basal/i);
     await expect(tempInput).toBeVisible({ timeout: 10000 });
@@ -68,13 +67,13 @@ test.describe("Flujo de registro de síntomas", () => {
 
   test("muestra validación de temperatura fuera de rango", async ({ page }) => {
     await page.goto("/symptoms");
-    await expect(page.getByRole("heading", { name: /síntomas/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("heading", { name: "Síntomas" }).first()).toBeVisible({ timeout: 15000 });
 
     const tempInput = page.getByLabel(/temperatura basal/i);
     await expect(tempInput).toBeVisible({ timeout: 10000 });
     await tempInput.fill("50");
 
-    await expect(page.getByText("Entre 35°C y 42°C")).toBeVisible();
+    await expect(page.getByText("Entre 35°C y 42°C", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /guardar/i })).toBeDisabled();
   });
 });
