@@ -88,7 +88,7 @@
 | Acción | Tiempo | Costo | Beneficio |
 |---|---|---|---|
 | Configurar connection pooling | 2-4 horas | $0 | -60-120ms por request |
-| Migrar a AWS São Paulo | 1-2 días | $0 (free tier) | -80-150ms por request |
+| Desplegar backend en AWS São Paulo | 1-2 días | $0 (free tier) | -80-150ms por request |
 | Retry con backoff | 2-3 horas | $0 | Manejo de cold starts |
 | Optimizar queries | 2 horas | $0 | -10-30ms por query |
 | **Total** | **~3-4 días** | **$0** | **-150-300ms por request** |
@@ -96,16 +96,16 @@
 ### Por qué AWS São Paulo
 
 ```
-ANTES:
+ANTES (solo local, sin hosting en cloud):
 ┌─────────────┐      80-150ms       ┌─────────────┐
 │   Backend   │ ◄──────────────────► │  Neon (BR)  │
-│  (US/otro)  │     latencia red    │             │
+│  (tu PC)    │     latencia red    │             │
 └─────────────┘                      └─────────────┘
 
-DESPUÉS:
+DESPUÉS (desplegado en AWS São Paulo):
 ┌─────────────┐      <5ms           ┌─────────────┐
 │   Backend   │ ◄──────────────────► │  Neon (BR)  │
-│  (São Paulo)│     latencia red    │             │
+│  (sa-east-1)│     latencia red    │             │
 └─────────────┘                      └─────────────┘
 ```
 

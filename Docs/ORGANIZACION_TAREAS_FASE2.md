@@ -35,7 +35,7 @@
 |---|---|---|---|---|---|
 | T1.1 | Configurar connection pooling en `db.py` | Meriyei | Ninguna | 2h | ⬜ Pendiente |
 | T1.2 | Configurar `pool_recycle`, `pool_timeout`, `pool_size` para Neon | Meriyei | T1.1 | 2h | ⬜ Pendiente |
-| T1.3 | Migrar hosting backend a AWS São Paulo (Lambda o EC2) | Madeleine | T1.1, T1.2 | 1-2 días | ⬜ Pendiente |
+| T1.3 | Desplegar backend en AWS São Paulo (Lambda o EC2) | Madeleine | T1.1, T1.2 | 1-2 días | ⬜ Pendiente |
 | T1.4 | Implementar retry con exponential backoff para cold starts | Meriyei | T1.1 | 3h | ⬜ Pendiente |
 | T1.5 | Optimizar query `get_cycle_by_id` (JOIN en vez de 2 queries) | Meriyei | Ninguna | 2h | ⬜ Pendiente |
 | T1.6 | Benchmark: medir latencia antes/después de optimizaciones | Madeleine | T1.1-T1.5 | 4h | ⬜ Pendiente |
@@ -139,7 +139,7 @@ Semana 3: T2.8 (componente chat frontend, espera T2.7)
 
 | # | Tarea | Frente | Tiempo | Dependencias |
 |---|---|---|---|---|
-| T1.3 | Migrar a AWS São Paulo | F1 | 16h | T1.1, T1.2 |
+| T1.3 | Desplegar backend en AWS São Paulo | F1 | 16h | T1.1, T1.2 |
 | T1.6 | Benchmark latencia | F1 | 4h | T1.1-T1.5 |
 | T2.1 | Investigar Groq | F2 | 4h | — |
 | T2.3 | Investigar Cloudflare | F2 | 3h | — |
@@ -155,7 +155,7 @@ Semana 3: T2.8 (componente chat frontend, espera T2.7)
 
 ```
 Semana 1: T2.1 → T2.3 → T2.4 (investigar proveedores chatbot)
-Semana 1-2: T1.3 (migrar a AWS São Paulo)
+Semana 1-2: T1.3 (desplegar backend en AWS São Paulo)
 Semana 2: T1.6 (benchmark)
 Semana 3-5: T4.1 → T4.2 → T4.3 (ML pipeline completo)
 ```
@@ -326,9 +326,9 @@ engine = create_async_engine(
 
 ---
 
-### T1.3: Migrar a AWS São Paulo (Madeleine)
+### T1.3: Desplegar Backend en AWS São Paulo (Madeleine)
 
-**Objetivo:** Mover el hosting del backend a `sa-east-1` (São Paulo).
+**Objetivo:** Desplegar el backend (que actualmente solo corre en local) en `sa-east-1` (São Paulo), la misma región de Neon Brasil.
 
 **Opción recomendada:** AWS Lambda (free tier)
 
@@ -337,8 +337,9 @@ engine = create_async_engine(
 2. Configurar Lambda con Python 3.11
 3. Configurar API Gateway
 4. Deploy del backend
-5. Configurar variables de entorno
+5. Configurar variables de entorno (DATABASE_URL, JWT_SECRET, etc.)
 6. Verificar conectividad con Neon Brasil
+7. Actualizar CORS en `main.py` con la URL real de API Gateway
 
 **Criterio de aceptación:**
 - [ ] Backend corriendo en `sa-east-1`

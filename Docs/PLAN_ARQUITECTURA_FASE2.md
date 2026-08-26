@@ -32,7 +32,7 @@
 | **LLM** | Ollama local (primario) + Groq (fallback) | Configurado, no funcional en cloud |
 | **CI/CD** | GitHub Actions (frontend.yml + backend.yml) | Funcional |
 | **Hosting frontend** | Vercel | Funcional |
-| **Hosting backend** | Actualmente Render (por definir migración) | En transición |
+| **Hosting backend** | Local (sin desplegar aún) | Pendiente de deploy en AWS São Paulo |
 
 ### Infraestructura de BD
 
@@ -117,9 +117,9 @@ engine = create_async_engine(DATABASE_URL, pool_pre_ping=True)
 
 #### Problema #2: Hosting Lejano de Neon
 
-Si el backend corre en Render (US), cada request tiene:
-- Latencia de red Brasil ↔ US: **80-150ms ida y vuelta**
-- Neon está en Brasil → hosting ideal también en Brasil
+Si el backend corre en un hosting fuera de Brasil, cada request tiene:
+- Latencia de red Brasil ↔ Hosting exterior: **80-150ms ida y vuelta**
+- Neon está en Brasil → hosting ideal también en Brasil (AWS São Paulo `sa-east-1`)
 
 #### Problema #3: Neon Cold Starts
 
@@ -196,7 +196,9 @@ engine = create_async_engine(
 | Production | 10 | 20 | 1800 |
 | Testing | 2 | 5 | 600 |
 
-#### Paso 2: Migrar Hosting a AWS São Paulo (Madeleine, 1-2 días)
+#### Paso 2: Desplegar Backend en AWS São Paulo (Madeleine, 1-2 días)
+
+El backend actualmente solo corre en local. Neon ya está en Brasil. El paso es desplegar el backend en la misma región para minimizar latencia de red.
 
 **Opción Lambda (recomendada para empezar):**
 
