@@ -1,0 +1,178 @@
+# EVA — Contexto para diagnóstico de OpenCode · Fase 2
+
+> **Naturaleza de este documento:** esto es CONTEXTO, no un plan. No contiene
+> decisiones de arquitectura tomadas de antemano. OpenCode actúa aquí como
+> **arquitecto de software**: diagnostica, compara opciones reales y decide
+> qué hacer en cada frente. Este documento no asume `contextoopencode.md`
+> como autoridad previa ni arrastra decisiones de documentos anteriores —
+> se entrega tal cual, como hechos actuales del proyecto, para que OpenCode
+> parta de cero en su diagnóstico.
+
+**Equipo de esta fase:** Meriyei, Daniel, Madeleine (3 desarrolladoras).
+*Nota: la participación de Joshua en esta fase está sin confirmar — no debe
+asumirse ni presente ni ausente hasta que el equipo lo aclare.*
+
+---
+
+## 1. Estado real de la infraestructura hoy
+
+- **Base de datos:** ya NO se usa Supabase. La BD fue migrada a **Neon**,
+  con el servidor ubicado en **Brasil**.
+- **Autenticación:** ya NO se usa Supabase Auth. El equipo construyó **su
+  propio módulo de validación/autenticación** in-house.
+- **Infraestructura de hosting objetivo:** **AWS South America East 1
+  (São Paulo)**.
+- **Backend actual:** Python 3.11 + FastAPI + SQLAlchemy Core, capa ML con
+  Prophet + joblib (modelo por usuaria), LLM actualmente con Ollama local
+  como primario y Groq como fallback.
+- **Frontend:** React 18 + TypeScript + Vite + PWA (IndexedDB/Dexie),
+  hosting en Vercel — sin cambios previstos en esta fase.
+- **Restricción no negociable:** el stack completo debe ser **100% gratuito**
+  (proyecto académico final).
+
+---
+
+## 2. Frente 1 — Diagnóstico de arquitectura para reducir latencia
+
+
+**El problema real a resolver NO es "migrar a Go".** El problema real es:
+
+> El tiempo de respuesta del backend no es el óptimo. Necesitamos reducir la
+> latencia y mejorar el nivel de respuesta general de la API, aprovechando
+> que la infraestructura de datos ya está en Sudamérica (Neon en Brasil) y
+> que el hosting objetivo es AWS São Paulo.
+
+La idea de migrar a Go **surgió en el equipo como hipótesis**, no como
+decisión cerrada. Se le pide explícitamente a OpenCode, actuando como
+arquitecto de software, que:
+
+1. **Cuestione la hipótesis**: ¿migrar todo el backend a Go es realmente la
+   mejor forma de resolver el problema de latencia, o hay alternativas
+   igual o más efectivas con mucho menor costo de migración? Ejemplos de
+   alternativas que debe considerar y comparar (sin limitarse a estas):
+   - Optimizar el backend Python actual (resolver las N+1 ya identificadas
+     en `symptom_service.py` y `export_service.py`, connection pooling,
+     paralelización de queries, caching).
+   - Colocar el backend físicamente más cerca de Neon (Brasil) y del
+     usuario final, aprovechando AWS São Paulo, antes de tocar el lenguaje.
+   - Migración parcial a Go solo en los endpoints más críticos/costosos,
+     en lugar de una reescritura completa.
+   - Migración completa a Go (la hipótesis original del equipo).
+   - Cualquier otra alternativa que OpenCode considere válida.
+2. **Si concluye que Go es la opción correcta**, debe proponer el stack
+   concreto (framework HTTP, driver de BD para Neon/Postgres, forma de
+   generar queries type-safe, etc.) con su justificación — no asumir un
+   stack específico porque "así se venía hablando".
+3. **Diagnosticar el driver/latencia de conexión a Neon** específicamente:
+   Neon es Postgres serverless con su propio comportamiento de pooling y
+   cold starts; esto debe evaluarse explícitamente sea cual sea el lenguaje
+   elegido.
+4. **Definir qué pasa con la capa ML (Prophet)**: hoy es Python puro. Debe
+   evaluar si conviene mantenerla como microservicio separado (en cualquier
+   lenguaje que resulte de este diagnóstico) o si hay una alternativa mejor,
+   dado que Prophet no tiene equivalente maduro fuera de Python.
+
+**Reglas de arquitectura del proyecto que sí se mantienen, sin importar el
+lenguaje que resulte del diagnóstico:**
+- SRP estricto: separación clara entre capa HTTP, lógica de negocio,
+  acceso a datos y configuración transversal.
+- 3NF en la base de datos — no se denormaliza sin justificación explícita.
+- La capa que entrena/predice con ML nunca hace queries a BD ni contiene
+  lógica de negocio — solo entrena y predice.
+- Ningún cambio de schema se aplica automáticamente por el agente; todo
+  cambio de base de datos en Neon se ejecuta manualmente y se documenta.
+
+---
+
+## 3. Frente 2 — Chatbot: diagnóstico de proveedor cloud gratuito
+
+**El requisito es absoluto: 100% cloud, 100% gratuito.** No se define de
+antemano qué proveedor usar — eso es justamente lo que OpenCode debe
+investigar a fondo.
+
+### Contexto del problema
+- El chatbot (`/insights`) debe responder de forma **oportuna y pertinente**
+  — la prioridad es latencia baja y disponibilidad consistente.
+- Hoy depende de Ollama corriendo localmente en el servidor. **Ollama queda
+  descartado por completo de este proyecto de aquí en adelante — no como
+  fallback, no como opción de desarrollo local, no en ningún escenario.**
+  El chatbot en producción y en desarrollo debe depender exclusivamente de
+  proveedores cloud.
+- La privacidad no se negocia: el contexto enviado al proveedor que se
+  elija nunca puede incluir PII (email, nombre, fecha de nacimiento,
+  user_id, IP, notas de texto libre) — solo estadísticas agregadas del
+  ciclo (fase actual, día del ciclo, duración promedio, síntomas
+  frecuentes, días hasta el siguiente período).
+
+### Lo que se le pide a OpenCode
+Investigación exhaustiva y comparación real (no superficial) de proveedores
+cloud con tier gratuito viable para inferencia de LLM, incluyendo pero sin
+limitarse a:
+
+- **Groq** (ya se usaba como fallback — debe re-evaluarse en este análisis,
+  no asumirse como ganador automático)
+- **Oracle Cloud** (Oracle tiene "Always Free" con recursos permanentes —
+  evaluar si aplica a inferencia LLM o solo a cómputo genérico)
+- **Google Cloud Platform (GCP)** (créditos/free tier — evaluar qué servicio
+  específico de GCP serviría para esto: Vertex AI free tier, u otro)
+- Cualquier otro proveedor real con tier gratuito verificable que OpenCode
+  encuentre en su investigación (ej. otros con free tier de inferencia)
+
+Para cada candidato, el análisis debe cubrir como mínimo:
+- ¿Es realmente gratuito de forma sostenida, o es crédito de prueba que
+  expira? (esto es descalificante si expira)
+- Límites reales de cuota (requests/minuto, tokens/día, requests/día)
+- Latencia esperada, idealmente considerando cercanía a Sudamérica/AWS
+  São Paulo
+- Facilidad de integración (API HTTP simple vs SDK complejo, autenticación)
+- Calidad/tamaño de los modelos disponibles gratis (no todos los tiers
+  gratuitos dan acceso a modelos igual de capaces)
+- Qué pasa si se agota la cuota gratuita — hay que tener un plan de
+  degradación (mensaje de error claro al usuario, no fallo silencioso)
+
+**Entregable esperado de este frente:** una tabla comparativa con los
+proveedores investigados y una recomendación justificada de proveedor
+primario — y si aplica, un segundo proveedor de respaldo también 100%
+gratuito — para que el equipo la valide antes de implementar.
+
+---
+
+## 4. Frente 3 — Eliminación total de E2E (Playwright)
+
+Este frente sí es una decisión ya tomada por el equipo, no un diagnóstico:
+**se elimina Playwright del proyecto por completo**, no se suspende.
+
+### Qué se elimina
+- Carpeta/specs de Playwright en el frontend
+- Dependencia `@playwright/test` de `package.json`
+- Pasos de CI relacionados con Playwright en los workflows (eliminados, no
+  comentados)
+- Cualquier script `npm run test:e2e` o equivalente
+- Cierre formal de las issues #27, #38, #52 y #55 como
+  **"Won't do — decisión de producto, Fase 2"**
+
+### Qué se mantiene sin cambios
+- Vitest (frontend) y el testing del backend (en el lenguaje que resulte
+  del diagnóstico del Frente 1) siguen activos con normalidad.
+
+---
+
+## 5. Organización de tareas — 3 desarrolladoras
+
+OpenCode debe generar la distribución de tareas resultante de los 3 frentes
+entre **Meriyei, Daniel y Madeleine**, especificando para cada tarea:
+developer responsable, frente al que pertenece, dependencias con otras
+tareas, y estimación de esfuerzo. No hay una cuarta persona disponible en
+esta fase — si el diagnóstico del Frente 1 o 2 genera trabajo de investigación
+pesado (ej. evaluación de proveedores cloud, benchmarking de lenguaje), ese
+trabajo también debe asignarse a una de las 3, no asumirse "externo".
+
+---
+
+## 6. Backups
+
+Organizar la integracion de backups para los usuarios amarrados al email, cual es la mejor manera de hacer backups, el modelo de google o WhatsApp es una buena guia
+- Alcance del backup
+- Frecuencia y retención
+- Dónde se guarda (100% gratis, como todo el proyecto)
+- Privacidad, Si el backup se envía por email, ¿va cifrado? Un backup con datos de ciclo/síntomas viajando por correo sin cifrar rompe los principios de privacidad de EVA.
