@@ -1421,25 +1421,24 @@ Después de eso, los deployments son automáticos desde GitHub.
 
 ---
 
-### Issue #58 — [S9] Deploy producción: Render (backend)
+### Issue #58 — [S9] Deploy producción: AWS São Paulo (backend)
 **Asignado:** Meriyei | **Participa:** Madeleine | **Labels:** `devops` `backend`
 
 ```
 ## Descripción
-Configurar el deploy del backend FastAPI en Render con el cron job de ML.
+Configurar el deploy del backend FastAPI en AWS São Paulo (sa-east-1) con el cron job de ML.
 
 ## Criterios de aceptación
-- [ ] Web service de FastAPI creado en Render (plan gratuito)
-- [ ] `render.yaml` configurado con el web service y el cron job de reentrenamiento
-- [ ] Variables de entorno configuradas en Render: todas las del `.env.example`
-- [ ] `GET /health` responde en la URL de Render
-- [ ] Cron job de reentrenamiento activo y visible en el dashboard de Render
+- [ ] Backend desplegado en AWS Lambda (sa-east-1) o EC2 (sa-east-1)
+- [ ] Variables de entorno configuradas: todas las del `.env.example`
+- [ ] `GET /health` responde en la URL de producción
+- [ ] Cron job de reentrenamiento activo (Lambda o scheduled task)
 - [ ] CORS configurado para aceptar el dominio de Vercel
-- [ ] Directorio `ml_models/` persiste entre deployments (Render persistent disk o volumen)
+- [ ] Directorio `ml_models/` persiste entre invocaciones (S3 o EFS)
 
 ## Notas técnicas
-**Madeleine valida** que el cron job de reentrenamiento corre correctamente en Render
-y que los modelos `.pkl` persisten entre deployments (usar Render Disk).
+**Madeleine valida** que el cron job de reentrenamiento corre correctamente
+y que los modelos `.pkl` persisten entre deployments (usar S3 o EFS).
 ```
 
 ---

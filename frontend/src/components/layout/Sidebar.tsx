@@ -5,15 +5,13 @@ const navItems = [
   { to: "/dashboard", icon: "dashboard", label: "Dashboard" },
   { to: "/calendar", icon: "history", label: "Calendario" },
   { to: "/symptoms", icon: "vital_signs", label: "Síntomas" },
-  { to: "/insights", icon: "menu_book", label: "Insights" },
-  { to: "/export", icon: "shield", label: "Privacidad" },
+  { to: "/insights", icon: "chat", label: "Asistente EVA" },
 ] as const;
 
 export function Sidebar() {
   const { user, logout } = useAuth();
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Usuaria";
-  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+  const displayName = user?.email?.split("@")[0] ?? "Usuaria";
 
   return (
     <aside className="hidden lg:flex flex-col py-6 h-full w-64 fixed left-0 top-0 bg-surface border-r border-border-subtle z-50">
@@ -44,17 +42,9 @@ export function Sidebar() {
 
       <div className="px-4 mt-auto">
         <div className="flex items-center gap-3 p-3 rounded-xl bg-surface-container-low border border-border-subtle">
-          {avatarUrl ? (
-            <img
-              className="w-10 h-10 rounded-full border-2 border-primary-fixed object-cover"
-              src={avatarUrl}
-              alt={displayName}
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-sm font-bold shrink-0">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-sm font-bold shrink-0">
+            {displayName.charAt(0).toUpperCase()}
+          </div>
           <div className="flex-1 min-w-0">
             <p className="text-label-md font-bold text-text-main truncate">{displayName}</p>
             <p className="text-label-md text-text-muted">Plan Básico</p>

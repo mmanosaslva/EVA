@@ -69,7 +69,7 @@ class TestListLogsByCycle:
             )
         assert exc.value.status_code == 404
 
-    @patch("app.services.symptom_service.get_symptoms_by_log")
+    @patch("app.services.symptom_service.get_symptoms_by_log_ids")
     @patch("app.services.symptom_service.get_logs_by_cycle_paginated")
     @patch("app.services.symptom_service.count_logs_by_cycle")
     @patch("app.services.symptom_service.cycle_repo.get_cycle_by_id")
@@ -79,7 +79,7 @@ class TestListLogsByCycle:
         mock_get_cycle.return_value = _make_cycle_row()
         mock_count.return_value = 1
         mock_logs.return_value = [_make_log_row()]
-        mock_symptoms.return_value = []
+        mock_symptoms.return_value = {}
 
         total, logs = await list_logs_by_cycle(
             cycle_id=TEST_CYCLE_ID,

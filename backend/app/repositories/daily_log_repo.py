@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date
 
 from sqlalchemy import select, insert, update, delete, func
@@ -41,6 +42,24 @@ async def get_logs_by_cycle_paginated(
     async with engine.connect() as conn:
         result = await conn.execute(query)
         return result.fetchall()
+
+
+async def get_logs_by_cycle_ids(cycle_ids: list[str]) -> dict[str, list]:
+    if not cycle_ids:
+        return {}
+    query = (
+        select(*LOG_COLUMNS)
+        .where(daily_logs_table.c.cycle_id.in_(cycle_ids))
+        .order_by(daily_logs_table.c.cycle_id, daily_logs_table.c.date)
+    )
+    async with engine.connect() as conn:
+        result = await conn.execute(query)
+        rows = result.fetchall()
+    logs_by_cycle: dict[str, list] = defaultdict(list)
+    for row in rows:
+        m = row._mapping
+        logs_by_cycle[str(m["cycle_id"])].append(dict(m))
+    return dict(logs_by_cycle)
 
 
 async def create_daily_log(data: dict) -> dict:

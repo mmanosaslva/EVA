@@ -110,7 +110,7 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 |---|--------|----------|--------|
 | 40 | ml_service.py — Prophet para predicción de series de tiempo *(Meriyei define features)* | Joshua | `ml` `backend` |
 | 41 | Pipeline de features para el modelo ML | Joshua | `ml` |
-| 42 | Cron job de reentrenamiento nocturno (Render) *(Meriyei hace queries)* | Joshua *(Madeleine valida deploy)* | `ml` `devops` |
+| 42 | Cron job de reentrenamiento nocturno (AWS Lambda) *(Meriyei hace queries)* | Joshua *(Madeleine valida deploy)* | `ml` `devops` |
 | 43 | **Integrar LLM con datos reales del ciclo** *(Meriyei valida privacidad)* | Madeleine | `ml` `ai` `backend` |
 | 44 | Métricas de precisión: MAE del modelo ML | Joshua | `testing` `ml` |
 | 45 | Tests: ml_service.py con datos sintéticos | Joshua | `testing` `ml` |
@@ -143,7 +143,7 @@ PWA de salud menstrual privacy-first · React + FastAPI + ML
 | 55 | Tests E2E: regresión completa de la app *(Daniel y Meriyei revisan)* | Madeleine | `testing` |
 | 56 | Revisión de privacidad y seguridad *(Madeleine revisa capa ML)* | Meriyei | `backend` `security` |
 | 57 | Deploy producción: Vercel (frontend) | Daniel | `devops` |
-| 58 | Deploy producción: Render (backend) *(Madeleine valida cron job)* | Meriyei | `devops` `backend` |
+| 58 | Deploy producción: AWS São Paulo (backend) *(Madeleine valida cron job)* | Meriyei | `devops` `backend` |
 | 59 | Documentación final: README + guías técnicas *(Meriyei y Madeleine documentan sus secciones)* | Daniel | `docs` |
 | 60 | Presentación demo y video walkthrough | Daniel + Meriyei + Madeleine | `docs` |
 

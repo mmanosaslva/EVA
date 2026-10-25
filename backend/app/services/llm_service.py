@@ -43,7 +43,7 @@ Pregunta: {question}
 
 async def _call_ollama(prompt: str) -> Optional[str]:
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.post(
                 f"{OLLAMA_BASE_URL}/api/generate",
                 json={

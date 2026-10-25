@@ -177,11 +177,9 @@ frontend/
 
 ## Variables de entorno
 
-Crear archivo `.env.local` cuando se implemente la integración con el backend:
+Crear archivo `.env.local`:
 
 ```env
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
 VITE_API_URL=http://localhost:8000
 ```
 

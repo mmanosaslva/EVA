@@ -17,8 +17,8 @@ def _make_row(data: dict):
 
 class TestExportCsv:
     @pytest.mark.asyncio
-    @patch("app.services.export_service.get_symptoms_by_log")
-    @patch("app.services.export_service.get_logs_by_cycle")
+    @patch("app.services.export_service.get_symptoms_by_log_ids")
+    @patch("app.services.export_service.get_logs_by_cycle_ids")
     @patch("app.services.export_service.cycle_repo.get_cycles_by_user")
     async def test_csv_with_data(self, mock_cycles, mock_logs, mock_symptoms):
         mock_cycles.return_value = [
@@ -26,16 +26,20 @@ class TestExportCsv:
                         "start_date": date(2025, 6, 1), "end_date": date(2025, 6, 5),
                         "created_at": None, "updated_at": None}),
         ]
-        mock_logs.return_value = [
-            _make_row({"id": TEST_LOG_ID, "cycle_id": TEST_CYCLE_ID,
-                        "date": date(2025, 6, 1), "flow_level": "medium",
-                        "temperature": 36.5, "notes": "colicos",
-                        "created_at": None, "updated_at": None}),
-        ]
-        mock_symptoms.return_value = [
-            _make_row({"symptom_id": 1, "intensity": 3, "name": "Dolor abdominal",
-                        "category": "fisica", "common_phase": "menstruacion"}),
-        ]
+        mock_logs.return_value = {
+            TEST_CYCLE_ID: [
+                {"id": TEST_LOG_ID, "cycle_id": TEST_CYCLE_ID,
+                 "date": date(2025, 6, 1), "flow_level": "medium",
+                 "temperature": 36.5, "notes": "colicos",
+                 "created_at": None, "updated_at": None},
+            ],
+        }
+        mock_symptoms.return_value = {
+            TEST_LOG_ID: [
+                {"symptom_id": 1, "intensity": 3, "name": "Dolor abdominal",
+                 "category": "fisica", "common_phase": "menstruacion"},
+            ],
+        }
 
         csv_content = await export_csv(TEST_USER_ID)
         lines = csv_content.strip().split("\n")
@@ -57,8 +61,8 @@ class TestExportCsv:
         assert "Fecha inicio ciclo" in csv_content
 
     @pytest.mark.asyncio
-    @patch("app.services.export_service.get_symptoms_by_log")
-    @patch("app.services.export_service.get_logs_by_cycle")
+    @patch("app.services.export_service.get_symptoms_by_log_ids")
+    @patch("app.services.export_service.get_logs_by_cycle_ids")
     @patch("app.services.export_service.cycle_repo.get_cycles_by_user")
     async def test_csv_log_without_symptoms(self, mock_cycles, mock_logs, mock_symptoms):
         mock_cycles.return_value = [
@@ -66,13 +70,15 @@ class TestExportCsv:
                         "start_date": date(2025, 6, 1), "end_date": date(2025, 6, 5),
                         "created_at": None, "updated_at": None}),
         ]
-        mock_logs.return_value = [
-            _make_row({"id": TEST_LOG_ID, "cycle_id": TEST_CYCLE_ID,
-                        "date": date(2025, 6, 2), "flow_level": "light",
-                        "temperature": None, "notes": None,
-                        "created_at": None, "updated_at": None}),
-        ]
-        mock_symptoms.return_value = []
+        mock_logs.return_value = {
+            TEST_CYCLE_ID: [
+                {"id": TEST_LOG_ID, "cycle_id": TEST_CYCLE_ID,
+                 "date": date(2025, 6, 2), "flow_level": "light",
+                 "temperature": None, "notes": None,
+                 "created_at": None, "updated_at": None},
+            ],
+        }
+        mock_symptoms.return_value = {}
 
         csv_content = await export_csv(TEST_USER_ID)
         lines = csv_content.strip().split("\n")
@@ -81,11 +87,13 @@ class TestExportCsv:
         assert "light" in csv_content
 
     @pytest.mark.asyncio
-    @patch("app.services.export_service.get_symptoms_by_log")
-    @patch("app.services.export_service.get_logs_by_cycle")
+    @patch("app.services.export_service.get_symptoms_by_log_ids")
+    @patch("app.services.export_service.get_logs_by_cycle_ids")
     @patch("app.services.export_service.cycle_repo.get_cycles_by_user")
     async def test_csv_date_filter_passed_to_repo(self, mock_cycles, mock_logs, mock_symptoms):
         mock_cycles.return_value = []
+        mock_logs.return_value = {}
+        mock_symptoms.return_value = {}
 
         csv_content = await export_csv(
             TEST_USER_ID,
@@ -102,8 +110,8 @@ class TestExportCsv:
 
 class TestExportPdf:
     @pytest.mark.asyncio
-    @patch("app.services.export_service.get_symptoms_by_log")
-    @patch("app.services.export_service.get_logs_by_cycle")
+    @patch("app.services.export_service.get_symptoms_by_log_ids")
+    @patch("app.services.export_service.get_logs_by_cycle_ids")
     @patch("app.services.export_service.predict_next_cycle")
     @patch("app.services.export_service.get_symptoms_analytics")
     @patch("app.services.export_service.get_summary")
@@ -137,8 +145,8 @@ class TestExportPdf:
             "model_mae_days": None,
             "cycles_used_for_training": None,
         }
-        mock_logs.return_value = []
-        mock_symptoms.return_value = []
+        mock_logs.return_value = {}
+        mock_symptoms.return_value = {}
 
         pdf_bytes = await export_pdf(TEST_USER_ID, cycles_back=1)
 

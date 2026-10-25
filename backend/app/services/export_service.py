@@ -5,8 +5,8 @@ from datetime import date
 from typing import Optional
 
 from app.repositories import cycle_repo
-from app.repositories.daily_log_repo import get_logs_by_cycle
-from app.repositories.symptom_repo import get_symptoms_by_log
+from app.repositories.daily_log_repo import get_logs_by_cycle_ids
+from app.repositories.symptom_repo import get_symptoms_by_log_ids
 from app.services.analytics_service import get_summary, get_symptoms_analytics
 from app.services.prediction_service import predict_next_cycle
 
@@ -22,32 +22,27 @@ async def _get_export_data(user_id: str, from_date: Optional[date] = None, to_da
 
     cycles.sort(key=lambda c: c["start_date"])
 
+    # Fetch logs en batch (evita N+1 por ciclo)
+    cycles_by_id = {str(c["id"]): c for c in cycles}
+    logs_map = await get_logs_by_cycle_ids(list(cycles_by_id.keys()))
+    all_logs: list[dict] = []
+    for cid, log_dicts in logs_map.items():
+        for log_dict in log_dicts:
+            log_dict["_cycle"] = cycles_by_id[cid]
+            all_logs.append(log_dict)
+
+    log_ids = [str(log["id"]) for log in all_logs]
+    symptoms_map = await get_symptoms_by_log_ids(log_ids)
+
     data = []
-    for cycle in cycles:
-        cycle_id = str(cycle["id"])
+    for log_entry in all_logs:
+        cycle = log_entry["_cycle"]
         duration = (cycle["end_date"] - cycle["start_date"]).days + 1 if cycle["end_date"] else ""
-        log_rows = await get_logs_by_cycle(cycle_id)
-        logs = [dict(row._mapping) for row in log_rows]
+        log_id = str(log_entry["id"])
+        symptoms = symptoms_map.get(log_id, [])
 
-        for log_entry in logs:
-            log_id = str(log_entry["id"])
-            symptom_rows = await get_symptoms_by_log(log_id)
-            symptoms = [dict(row._mapping) for row in symptom_rows]
-
-            if symptoms:
-                for symptom in symptoms:
-                    data.append({
-                        "Fecha inicio ciclo": str(cycle["start_date"]),
-                        "Fecha fin ciclo": str(cycle["end_date"]) if cycle["end_date"] else "",
-                        "Duracion (dias)": duration,
-                        "Fecha registro": str(log_entry["date"]),
-                        "Nivel flujo": log_entry.get("flow_level") or "",
-                        "Temperatura": str(log_entry["temperature"]) if log_entry.get("temperature") else "",
-                        "Sintoma": symptom.get("name", ""),
-                        "Intensidad": symptom.get("intensity", ""),
-                        "Notas": log_entry.get("notes") or "",
-                    })
-            else:
+        if symptoms:
+            for symptom in symptoms:
                 data.append({
                     "Fecha inicio ciclo": str(cycle["start_date"]),
                     "Fecha fin ciclo": str(cycle["end_date"]) if cycle["end_date"] else "",
@@ -55,10 +50,22 @@ async def _get_export_data(user_id: str, from_date: Optional[date] = None, to_da
                     "Fecha registro": str(log_entry["date"]),
                     "Nivel flujo": log_entry.get("flow_level") or "",
                     "Temperatura": str(log_entry["temperature"]) if log_entry.get("temperature") else "",
-                    "Sintoma": "",
-                    "Intensidad": "",
+                    "Sintoma": symptom.get("name", ""),
+                    "Intensidad": symptom.get("intensity", ""),
                     "Notas": log_entry.get("notes") or "",
                 })
+        else:
+            data.append({
+                "Fecha inicio ciclo": str(cycle["start_date"]),
+                "Fecha fin ciclo": str(cycle["end_date"]) if cycle["end_date"] else "",
+                "Duracion (dias)": duration,
+                "Fecha registro": str(log_entry["date"]),
+                "Nivel flujo": log_entry.get("flow_level") or "",
+                "Temperatura": str(log_entry["temperature"]) if log_entry.get("temperature") else "",
+                "Sintoma": "",
+                "Intensidad": "",
+                "Notas": log_entry.get("notes") or "",
+            })
 
     return data
 
@@ -182,10 +189,9 @@ async def export_pdf(user_id: str, cycles_back: int = 6) -> bytes:
     rows = await cycle_repo.get_cycles_by_user(user_id, limit=cycles_back, offset=0)
     cycles = [dict(row._mapping) for row in rows]
     has_notes = False
-    for cycle in cycles:
-        log_rows = await get_logs_by_cycle(str(cycle["id"]))
-        for log_entry in log_rows:
-            log_data = dict(log_entry._mapping) if hasattr(log_entry, "_mapping") else log_entry
+    logs_map = await get_logs_by_cycle_ids([str(c["id"]) for c in cycles])
+    for log_dicts in logs_map.values():
+        for log_data in log_dicts:
             if log_data.get("notes"):
                 has_notes = True
                 pdf.cell(0, 6, f"  {log_data['date']}: {log_data['notes'][:100]}", new_x="LMARGIN", new_y="NEXT")

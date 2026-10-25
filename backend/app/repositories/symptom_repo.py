@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from sqlalchemy import select, insert, delete
 from app.core.db import engine
 from app.models.db_tables import symptoms_catalog_table, daily_symptoms_table
@@ -47,6 +49,37 @@ async def get_symptoms_by_log(log_id: str) -> list:
     async with engine.connect() as conn:
         result = await conn.execute(query)
         return result.fetchall()
+
+
+async def get_symptoms_by_log_ids(log_ids: list[str]) -> dict[str, list]:
+    """Batch fetch symptoms for multiple logs in a single query.
+    Returns {log_id: [symptom_row, ...]} for all requested log_ids."""
+    if not log_ids:
+        return {}
+
+    join_cols = [
+        daily_symptoms_table.c.log_id,
+        daily_symptoms_table.c.symptom_id,
+        daily_symptoms_table.c.intensity,
+        symptoms_catalog_table.c.name,
+        symptoms_catalog_table.c.category,
+        symptoms_catalog_table.c.common_phase,
+    ]
+    query = (
+        select(*join_cols)
+        .select_from(daily_symptoms_table.join(symptoms_catalog_table))
+        .where(daily_symptoms_table.c.log_id.in_(log_ids))
+        .order_by(symptoms_catalog_table.c.category, symptoms_catalog_table.c.name)
+    )
+    async with engine.connect() as conn:
+        result = await conn.execute(query)
+        rows = result.fetchall()
+
+    symptoms_by_log: dict[str, list] = defaultdict(list)
+    for row in rows:
+        m = row._mapping
+        symptoms_by_log[str(m["log_id"])].append(dict(m))
+    return dict(symptoms_by_log)
 
 
 async def add_symptoms_to_log(log_id: str, symptoms: list[dict]) -> list:

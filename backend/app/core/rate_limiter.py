@@ -12,7 +12,7 @@ def _rate_limit_key(request: Request) -> str:
             import jwt
             payload = jwt.decode(
                 auth.split(" ")[1],
-                settings.SUPABASE_JWT_SECRET,
+                settings.SECRET_KEY,
                 algorithms=["HS256"],
                 options={"verify_signature": False, "verify_exp": False},
             )

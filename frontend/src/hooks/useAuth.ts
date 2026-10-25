@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import type { User } from "@supabase/supabase-js";
-import { supabase } from "../lib/supabaseClient";
+import { authClient, type AuthUser } from "../services/authClient";
 
 interface UseAuthReturn {
-  user: User | null;
+  user: AuthUser | null;
   isLoading: boolean;
   authError: string | null;
   login: (email: string, password: string) => Promise<void>;
@@ -11,69 +10,111 @@ interface UseAuthReturn {
   logout: () => Promise<void>;
   clearError: () => void;
   getToken: () => Promise<string | null>;
+  updateProfile: (data: { full_name?: string }) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    let cancelled = false;
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
+    async function checkAuth() {
+      if (authClient.isAuthenticated()) {
+        try {
+          const user = await authClient.me();
+          if (!cancelled) setUser(user);
+        } catch {
+          if (!cancelled) {
+            setUser(null);
+            authClient.logout();
+          }
+        }
+      }
+      if (!cancelled) setIsLoading(false);
+    }
 
-    return () => subscription.unsubscribe();
+    checkAuth();
+    return () => { cancelled = true; };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     setAuthError(null);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      if (error.message.includes("Invalid login credentials")) {
-        setAuthError("Email o contraseña incorrectos");
-      } else {
-        setAuthError(error.message);
-      }
-      throw error;
+    try {
+      const u = await authClient.login(email, password);
+      setUser(u);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error al iniciar sesión";
+      setAuthError(msg);
+      throw e;
     }
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {
     setAuthError(null);
-    const { error } = await supabase.auth.signUp({ email, password });
-
-    if (error) {
-      if (error.message.includes("already registered")) {
-        setAuthError("Este email ya está registrado");
-      } else {
-        setAuthError(error.message);
-      }
-      throw error;
+    try {
+      await authClient.register(email, password);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Error al registrarse";
+      setAuthError(msg);
+      throw e;
     }
   }, []);
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut();
+    await authClient.logout();
     setUser(null);
   }, []);
 
   const clearError = useCallback(() => setAuthError(null), []);
 
-  const getToken = useCallback(async (): Promise<string | null> => {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ?? null;
+  const getToken = useCallback(async () => authClient.getToken(), []);
+
+  const updateProfile = useCallback(async (data: { full_name?: string }) => {
+    const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+    const token = await authClient.getToken();
+    if (!token) throw new Error("No hay sesión activa");
+    const res = await fetch(`${API_BASE}/users/me`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("No se pudo actualizar el perfil");
+    const updated = await authClient.me();
+    setUser(updated);
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+    const token = await authClient.getToken();
+    if (!token) throw new Error("No hay sesión activa");
+    const res = await fetch(`${API_BASE}/users/me`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ password: newPassword }),
+    });
+    if (!res.ok) throw new Error("No se pudo actualizar la contraseña");
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+    const token = await authClient.getToken();
+    if (!token) throw new Error("No hay sesión activa");
+
+    const response = await fetch(`${API_BASE}/auth/account`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.detail ?? "No se pudo eliminar la cuenta");
+    }
+    await authClient.logout();
+    setUser(null);
   }, []);
 
   return {
@@ -85,5 +126,8 @@ export function useAuth(): UseAuthReturn {
     logout,
     clearError,
     getToken,
+    updateProfile,
+    updatePassword,
+    deleteAccount,
   };
 }

@@ -3,8 +3,8 @@ import { NavLink } from "react-router-dom";
 const mobileNavItems = [
   { to: "/dashboard", icon: "calendar_today", label: "Hoy" },
   { to: "/calendar", icon: "cycle", label: "Ciclo" },
-  { to: "/insights", icon: "monitoring", label: "Tendencias" },
-  { to: "/export", icon: "person", label: "Perfil" },
+  { to: "/insights", icon: "chat", label: "Asistente EVA" },
+  { to: "/config", icon: "person", label: "Configuración" },
 ] as const;
 
 export function BottomNavBar() {

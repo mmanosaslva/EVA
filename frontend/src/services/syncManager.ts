@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabaseClient";
+import { authClient } from "./authClient";
 import { peekAll, dequeue, queueLength, markCycleSynced, markLogSynced } from "../db";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -94,8 +94,7 @@ export async function processSyncQueue(): Promise<void> {
   });
 
   try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
+    const token = await authClient.getToken();
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
