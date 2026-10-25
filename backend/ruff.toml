@@ -1,0 +1,6 @@
+# Ruff config for the backend. The version is pinned in requirements-dev.txt;
+# rules are explicit so a Ruff upgrade does not silently change what CI checks.
+target-version = "py311"
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
