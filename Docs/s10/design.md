@@ -50,9 +50,12 @@ Textos fijos:
 | Clave | Texto |
 |---|---|
 | Disclaimer del chatbot | EVA no reemplaza el consejo médico profesional. |
-| Respuesta de respaldo (`source=eva/reglas`) | Etiqueta: **Respuesta automática**. Ayuda: "Nuestro asistente no está disponible ahora; esta orientación se basa en tu fase del ciclo." |
+| Respuesta de respaldo (`is_automatic=true`) | Etiqueta: **Respuesta automática**. Ayuda: "Nuestro asistente no está disponible ahora; esta orientación se basa en tu fase del ciclo." |
 | Offline | Sin conexión. Tus registros se guardan en este dispositivo y se sincronizarán al volver. |
 | Borrado de cuenta | Esto elimina tu cuenta y **todos** tus registros de forma permanente. No se puede deshacer. |
+| Consentimiento (registro) | ☐ Autorizo a EVA a tratar mis datos de salud menstrual (sensibles) para registrar mi ciclo y darme predicciones y orientación. Sé que entregarlos es voluntario, que se alojan en servidores fuera de Colombia y que puedo revocar esta autorización cuando quiera. [Leer la política de tratamiento] |
+| Términos (registro) | ☐ Acepto los [Términos de uso] y declaro que soy mayor de 18 años. |
+| Proveedor del chatbot | **Nunca se muestra.** La UI no nombra a Groq, Cloudflare ni ningún modelo (RX-06). |
 
 ## 3. Color
 
@@ -236,7 +239,18 @@ Toda vista con datos define cinco estados:
 - Sin ejes rojos ni "zonas de peligro".
 - Cada gráfico tiene un título que dice la conclusión ("Tus últimos 6 ciclos duraron entre 27 y 31 días"), no solo "Duración".
 
-## 13. Checklist de PR de UI
+## 13. Legal en la UI
+
+- Los dos checkboxes del registro van **sin marcar**, separados, con el link a la política de tratamiento en el mismo texto.
+- Los links "Privacidad" y "Términos" aparecen en el registro, el login, el perfil y el pie de `ExportPage`.
+- Las páginas `/legal/*` muestran la versión y la fecha de vigencia arriba, con tipografía `body-md` y ancho de lectura de 68 caracteres como máximo.
+- El estado vacío del chat incluye el disclaimer médico.
+
+## 14. Prototipos
+
+Enlace a los prototipos aprobados (T21): *pendiente*.
+
+## 15. Checklist de PR de UI
 
 - [ ] Solo tokens (sin hex, sin legacy).
 - [ ] Textos según §2 (tú, sin jerga, sin juicio).

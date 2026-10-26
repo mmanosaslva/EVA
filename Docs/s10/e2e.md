@@ -174,8 +174,8 @@ export { expect };
 - Cada mock acepta un override para probar errores:
 
 ```ts
-api.insights({ status: 200, body: { insight: "…", source: "groq/openai/gpt-oss-20b", disclaimer: "…" } });
-api.insights({ status: 200, body: { insight: "…", source: "eva/reglas", disclaimer: "…" } });
+api.insights({ status: 200, body: { insight: "…", disclaimer: "…", is_automatic: false } }); // respuesta de IA (Groq o Cloudflare: el front no distingue)
+api.insights({ status: 200, body: { insight: "…", disclaimer: "…", is_automatic: true } });  // respaldo por reglas
 api.login({ status: 400, body: { detail: "LOGIN_BAD_CREDENTIALS" } });
 ```
 
@@ -213,12 +213,15 @@ Si el frontend empieza a usar un endpoint nuevo, la guardia de red lo detecta y 
 | `auth` | muestra error con credenciales incorrectas | | — |
 | `auth` | avisa si el correo no está verificado | | — |
 | `auth` | registro muestra el aviso de verificación (sin auto-login) | | — |
+| `auth` | no permite registrarse sin aceptar términos y la autorización de datos sensibles | `@smoke` | T22 |
+| `auth` | los enlaces a `/legal/privacidad` y `/legal/terminos` abren las páginas | | T22 |
 | `auth` | cerrar sesión borra el token y vuelve a /login | | — |
 | `cycles` | crea un ciclo y aparece en el calendario | `@smoke` | #55 |
 | `symptoms` | registra síntomas con intensidad y flujo | `@smoke` | #27 |
 | `symptoms` | valida una temperatura fuera de rango | | #27 |
 | `insights` | muestra la respuesta del LLM con su disclaimer | `@smoke` | — |
-| `insights` | con `source=eva/reglas` muestra "Respuesta automática" | | — |
+| `insights` | con `is_automatic=true` muestra "Respuesta automática"; con `false` no muestra ninguna etiqueta | | — |
+| `insights` | la respuesta no menciona el proveedor ni el modelo en ningún lugar de la UI | | RX-06 |
 | `insights` | error de red muestra un mensaje amable y permite reintentar | | — |
 | `export` | descarga el CSV (nombre y `content-type`) | `@smoke` | #52 |
 | `export` | descarga el PDF (empieza con `%PDF`) | | #52 |
@@ -303,6 +306,8 @@ El job de E2E **no recibe ningún secreto**: no los necesita.
 - **Checklist por spec nuevo:** usa `test` de `fixtures/test.ts` · solo datos sintéticos · selectores accesibles · sin `waitForTimeout` · título en español · etiqueta `@smoke` si es un flujo crítico.
 
 ## 9. Migración desde la suite actual
+
+> La tarea T20 (Supabase cero) **borra** la suite vieja. Para rescatar selectores o esperas, se consulta el tag `archive/e2e_fail` (commit `82968bb`) y `archive/Rama_prueba` (`8954784`, `apiMocks.ts`). La tabla queda como referencia de qué reemplaza a qué.
 
 | Archivo actual (Prueba3) | Problema | Acción |
 |---|---|---|
