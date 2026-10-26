@@ -19,7 +19,7 @@ Motivación:
 from sqlalchemy import (
     Table, Column, MetaData, String, Date, DateTime,
     SmallInteger, Text, Numeric, Boolean, Integer,
-    ForeignKey, UniqueConstraint, CheckConstraint, Index,
+    UniqueConstraint, CheckConstraint, Index,
     func, text,
 )
 

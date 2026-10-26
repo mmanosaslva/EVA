@@ -130,7 +130,7 @@ T0 ✔ → T2 → T1 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 
 - **Commit:** `[S10] fix(privacy): borrado total de cuenta sin datos huérfanos ni reasignación`.
 
 ### T5 — Tests y lint en verde
-- **Estado (2026-10-26):** DP-10 y DP-11 hechos en `b4bfc4d`. Queda DP-12 (11 errores de ruff fuera de `app/`).
+- **Estado:** HECHA (2026-10-26). DP-10 y DP-11 en `b4bfc4d`; DP-12 en esta tarea: `ruff check backend/` = 0, y el CI ahora revisa todo `backend/`, no solo `app/`.
 - **Cierra:** DP-10, DP-11, DP-12.
 - **Depende de:** T1.
 - **Hecho cuando:** `pytest -q` = 0 fallos y `ruff check .` = 0.

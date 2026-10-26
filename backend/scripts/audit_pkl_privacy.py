@@ -12,7 +12,6 @@ Si no se especifica ruta, usa ml_models/ en el directorio actual.
 """
 
 import joblib
-import json
 import sys
 from pathlib import Path
 from typing import Any
