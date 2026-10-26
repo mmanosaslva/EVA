@@ -4,7 +4,12 @@
 >
 > **Marco:** [`restricciones.md`](restricciones.md) y [`reglas.md`](reglas.md). Responsable única: Mery (RG-01).
 >
-> Última revisión: 2026-10-25.
+> Última revisión: 2026-10-26.
+> - Chatbot con dos proveedores.
+> - Deploy 100 % en Vercel.
+> - Evaluación de la predicción.
+> - Marco legal colombiano.
+> - Backups diarios.
 
 ---
 
@@ -23,38 +28,56 @@
 
 | # | Objetivo | Métrica de cierre |
 |---|---|---|
-| O1 | Chatbot 100 % cloud y siempre disponible | `POST /insights` responde con `source=groq/<modelo>` o `source=eva/reglas`; 0 respuestas 503 en los tests |
+| O1 | Chatbot 100 % cloud y siempre disponible | Con Groq caído responde Cloudflare y el frontend recibe el mismo formato; con ambos caídos, la respuesta por reglas (`is_automatic=true`); 0 respuestas 503 en los tests |
 | O2 | Borrado total real | Test: 0 filas del usuario en todas las tablas + `.pkl` eliminado + re-registro sin datos |
 | O3 | Calidad base en verde | Todos los comandos de RG-06 en verde |
 | O4 | E2E restaurado | Suite Playwright en CI, con la red 100 % mockeada, en verde |
 | O5 | Offline real | `offline.spec.ts` en verde: registrar sin red y sincronizar al volver |
 | O6 | Latencia explicada con datos | Tabla de ms y queries por endpoint, y la decisión de región tomada con esos datos |
 | O7 | Repo consolidado | `main` = `develop`, ramas viejas archivadas, docs vigentes en `Docs/s10/` |
+| O8 | Cero Supabase y cero Render | `git grep -i "supabase\|render"` fuera de docs y migraciones históricas = 0; servicios de Render eliminados |
+| O9 | Cumplimiento legal básico (Colombia) | Consentimiento expreso registrado en `consents`; política publicada y revisada por el docente o asesor |
+| O10 | Datos recuperables | Backup diario cifrado en verde y una restauración de prueba documentada |
+| O11 | Predicción justificada | `evaluacion-prediccion.md` con la comparación y el método elegido en producción |
 
 ## 3. Decisiones de diseño
 
-### 3.1 Chatbot: Groq + respaldo por reglas
+### 3.1 Chatbot: Groq + Cloudflare Workers AI + respaldo por reglas
 
 **Problema:** `llm_service.py` llama primero a Ollama (`:157`) y después a Groq con `llama3-8b-8192` (`:14`), un modelo que Groq apagó el 2025-08-30. `_call_groq` se traga el error 400 (`:83`), así que en producción el chatbot nunca responde.
 
 **Solución:**
 
 ```
-routers/insights.py ──► services/insight_service.py ──┬─► repositories/* (contexto del ciclo, guardar insight)
-                                                      ├─► services/llm_service.py ──► Groq API (GROQ_MODEL)
-                                                      └─► respaldo por reglas (sin red)
+routers/insights.py ──► services/insight_service.py ──┬─► repositories/* (contexto del ciclo, guardar insight + proveedor usado)
+                                                      ├─► services/llm_service.py.generate()
+                                                      │      ├─► 1. Groq API            (GROQ_MODEL)
+                                                      │      └─► 2. Cloudflare Workers AI (CLOUDFLARE_AI_MODEL)
+                                                      └─► 3. respaldo por reglas (sin red, is_automatic=true)
 ```
 
-- **`llm_service.py`** contiene solo `SYSTEM_PROMPT`, `call_llm(prompt) -> str | None` y la sanitización. Usa `settings.GROQ_MODEL` (default `openai/gpt-oss-20b`), un timeout configurable y `temperature=0.5`. Rescata el prompt de `60da7fe`, sin la parte de Ollama.
+- **`llm_service.py`** contiene el `SYSTEM_PROMPT` (rescatado de `60da7fe`, sin Ollama), un adaptador por proveedor y `generate(prompt)`:
+  - Recorre `LLM_PROVIDERS` en orden.
+  - Pasa al siguiente ante timeout, 5xx, 429, modelo retirado o respuesta vacía.
+  - Un proveedor que devolvió 429 o 5xx se salta durante `LLM_PROVIDER_COOLDOWN_SECONDS`. En serverless, el enfriamiento vive en la instancia caliente; si la instancia es nueva, simplemente se vuelve a intentar.
+  - Los dos usan `temperature=0.5`, el mismo prompt y el mismo límite de tokens, para que las respuestas tengan un estilo parecido.
 - **`insight_service.py`**:
   1. Arma el contexto agregado: hoy `build_cycle_context` (`llm_service.py:87-151`), que se mueve aquí.
   2. Sanea la pregunta (quita emails, teléfonos y UUID).
-  3. Llama al LLM.
-  4. Si el LLM falla, usa el **respaldo por reglas**: plantillas por fase y síntoma frecuente, con `source="eva/reglas"`.
-  5. Guarda el insight.
-- **Frontend:** si `source` empieza por `eva/`, muestra la etiqueta "Respuesta automática" (ver `design.md`).
-- **Descartado:** Gemini, por RX-03, y cualquier modelo local, por RX-03.
-- **Riesgo:** los límites del free tier de Groq no se pudieron confirmar en una fuente oficial (los blogs dan entre 1.000 y 14.400 peticiones al día). El respaldo por reglas cubre el caso en que se agote la cuota.
+  3. Llama a `generate`.
+  4. Si ningún proveedor responde, usa el **respaldo por reglas**: plantillas por fase y síntoma frecuente.
+  5. Guarda el insight con el proveedor usado (`groq`, `cloudflare` o `rules`), solo para métricas internas.
+- **Contrato con el frontend:** `{ insight, disclaimer, is_automatic }`. **No incluye proveedor ni modelo**, así que cambiar de Groq a Cloudflare es invisible para la usuaria (RX-06). Solo `is_automatic=true` muestra la etiqueta "Respuesta automática" (`design.md` §2).
+- **Por qué estos dos** (verificado en sus docs oficiales, `verificaciones.md` §2-§3):
+  - Los dos son gratis y por contrato no entrenan con los datos.
+  - **Groq:** `openai/gpt-oss-20b`, con 30 peticiones/min y 1.000/día; devuelve 429 con `retry-after` al pasarse.
+  - **Cloudflare:** `@cf/openai/gpt-oss-20b`, el mismo modelo, así que el estilo de las respuestas no cambia. Tiene 10.000 neurons/día (~580 respuestas) y 300 peticiones/min.
+  - En la práctica: hasta ~1.000 respuestas al día por Groq y ~580 más por Cloudflare antes de caer en el respaldo por reglas.
+- **Descartados:**
+  - Gemini free, porque puede entrenar con los datos (RX-03).
+  - Mistral free, porque las fuentes dicen que exige aceptar el entrenamiento.
+  - OpenRouter free, por su límite de 50 peticiones al día.
+  - Cualquier modelo local (RX-03).
 
 ### 3.2 Borrado total y unicidad de identidad
 
@@ -83,19 +106,20 @@ Restaurar Playwright con una arquitectura nueva: build de preview apuntando a un
 
 ### 3.5 Rendimiento
 
-- **Hipótesis principal:** la latencia viene de la red (Render sin región declarada, posiblemente Oregon; Neon en São Paulo) multiplicada por las queries secuenciales, más el cold start de Render free. No del lenguaje.
-- **Método:** instrumentación temporal (RG-14):
+- **Hipótesis principal:** la latencia viene de la red (hoy Render sin región declarada, posiblemente en EE. UU.; Neon en São Paulo) multiplicada por las queries secuenciales, más el cold start de Render free, que se duerme a los 15 minutos. No del lenguaje.
+- **La migración a Vercel (§3.7) ataca la causa principal:** las funciones se pueden ubicar en São Paulo (`gru1`, una de las regiones de Vercel), junto a Neon. Hobby permite **una** región; que permita elegir `gru1` se confirma en el dashboard (`verificaciones.md` §1).
+- **Método** (después de T25, sobre Vercel): instrumentación temporal (RG-14):
   - Middleware con `ContextVar` que cuenta queries y tiempo de BD (eventos `before/after_cursor_execute`).
   - Header `Server-Timing`.
   - Log con la ruta como plantilla, el número de queries y los ms (RX-05).
 - **Medir:**
   1. Latencia de `SELECT 1`.
-  2. `/health` en frío y en caliente.
+  2. Respuesta en frío y en caliente.
   3. Los 5 endpoints más usados.
 - **Acciones según el resultado:**
   - `asyncio.gather` en `export_pdf` (`export_service.py:98-100`), que hoy repite `get_cycles_by_user` (`:154,189`).
   - Reducir las 4 queries secuenciales de `list_logs_by_cycle` (`symptom_service.py:77-87`).
-  - Decidir la región. La migración a Go queda descartada mientras no haya evidencia (RX-03).
+  - La migración a Go queda descartada mientras no haya evidencia (RX-03).
 
 ### 3.6 Consolidación de ramas
 
@@ -117,21 +141,93 @@ Restaurar Playwright con una arquitectura nueva: build de preview apuntando a un
 | `82968bb` | Rescatar solo los selectores y las esperas | Sigue dependiendo de Supabase |
 | `cff1dca`, `389b3e0`, `84b24c5`, `4017e59` | Descartar | Ollama (RX-03) |
 
+### 3.7 Deploy 100 % en Vercel
+
+- **Decisión de Mery (2026-10-26):** sale Render. Frontend y backend se despliegan en Vercel.
+- **Cómo:** FastAPI corre como función Python serverless. El frontend reescribe `/api/*` hacia el backend, así queda todo en el mismo origen y se elimina el CORS entre dominios. Si conviene un proyecto o dos, se decide en T25.
+- **Lo que obliga a cambiar (RX-12, DP-43):**
+
+| Hoy (Render, proceso persistente) | En Vercel (serverless) |
+|---|---|
+| Keepalive con `asyncio.create_task` en startup | No existe: se elimina. Neon se despierta solo en la primera query |
+| Rate limit en memoria (slowapi) | Contador en Neon para `/insights` y `/auth/*` |
+| Modelos `.pkl` en disco | Sin disco: depende de T24 (§3.8) |
+| Cron de reentrenamiento en Render (de pago) | Sale. Si hace falta un job, va en GitHub Actions |
+| Pool de 5+5 conexiones | Pool mínimo / `NullPool` contra el pooler de Neon |
+
+- **Riesgos:**
+  - **Tamaño:** el límite es de 500 MB sin comprimir. Solo el stack de ML (Prophet, numpy, pandas, scipy, scikit-learn, matplotlib) mide ~410 MB, así que con Prophet queda al límite y sin él sobra espacio (`verificaciones.md` §1).
+  - **Tiempo:** 300 s por request en Hobby, de sobra para las llamadas al LLM, que tienen timeout.
+  - El plan Hobby es para uso no comercial, lo que es compatible con un proyecto académico.
+
+### 3.8 Predicción: ¿Prophet o algo más simple?
+
+- **Hoy:** Prophet entrena un modelo por usuaria (`ml_models/user_{id}.pkl`, mínimo 3 ciclos). Si no hay modelo, se usa la heurística: el promedio de la duración entre ciclos, ± la desviación estándar.
+- **En la práctica Prophet casi no se usa:** el disco de Render se borra, y el cron entrena en otra máquina.
+- **Pregunta:** ¿Prophet predice mejor que un método simple con las pocas observaciones que tiene cada usuaria (3 a 12 ciclos)?
+- **Evaluación (T24):**
+  - Datos sintéticos y validación *walk-forward*.
+  - Se compara contra mediana, promedio móvil ponderado y suavizado exponencial simple.
+  - Métricas: MAE en días, % dentro de ±2 días, tiempo y memoria.
+- **Regla:** si Prophet no gana por ≥ 0,5 días de MAE en ciclos irregulares, se elimina. Así se simplifica el backend y cabe en Vercel. Los métodos simples se calculan al vuelo desde los ciclos de la BD, no necesitan archivos ni cron, y siguen siendo **individuales por usuaria**.
+
+### 3.9 Módulo legal (Colombia)
+
+- **Marco:** Ley 1581 de 2012 y Decreto 1377 de 2013. Los datos de salud son sensibles: requieren autorización previa, expresa e informada, y facultativa (RX-14).
+- **Qué se construye (T22):**
+  - Política de tratamiento y términos versionados.
+  - Consentimiento separado y registrado (`consents`).
+  - Autorización de transferencia internacional (Neon y Vercel están fuera de Colombia).
+  - Declaración de mayoría de edad.
+  - Verificación de email obligatoria.
+  - Derechos de la titular, conectados con lo que ya existe: export = acceso; borrado total = supresión y revocación.
+- **Validación:** los textos los revisa el docente o un asesor antes de recibir usuarias reales. No es asesoría legal.
+
+### 3.10 Backups
+
+- **Hoy no hay ninguno** (DP-42). Neon free solo permite volver atrás 6 horas y guardar 1 snapshot manual.
+- **Plan (T23, RX-13):**
+  - Backup diario con GitHub Actions: `pg_dump` con un rol de solo lectura, cifrado con `age` dentro del runner y subido a Google Drive de Mery.
+  - Retención: 7 diarios + 4 semanales.
+  - Sin artifacts, porque el repo es público.
+  - Snapshot manual de Neon antes de cada SQL.
+  - Restauración de prueba mensual.
+
 ## 4. Riesgos
 
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
-| Groq cambia su free tier o retira el modelo | Chatbot | `GROQ_MODEL` por env + respaldo por reglas |
+| Groq o Cloudflare cambian su free tier o retiran el modelo | Chatbot | Failover entre los dos + modelos por env + respaldo por reglas |
+| El backend no cabe en una función de Vercel (500 MB; hoy ~410 MB solo de ML) | Deploy | T24 antes que T25; eliminar Prophet y su stack si no aporta; si se queda, podar dependencias |
+| Se agota la cuota diaria de los dos proveedores | Chatbot | Respaldo por reglas; rate limit por usuaria en `/insights` (T25) para que una sola cuenta no consuma la cuota |
+| Se pierde la clave privada de `age` | Los backups no se pueden leer | Guardarla en dos lugares offline (p. ej. gestor de contraseñas + papel) |
 | Hay datos huérfanos en Neon por el bug de borrado | Privacidad | Consulta previa (§3.2.3) y decisión de Mery |
 | Conflicto al rescatar el WIP local sobre una base más nueva | Pérdida de trabajo | Tarea T1 dedicada, con stash y verificación |
-| Cold start de Render free | UX | Medirlo antes de actuar; el keepalive actual solo mantiene viva la BD, no Render (NO VERIFICADO) |
+| Cold start de las funciones de Vercel | UX | Medirlo en T15. Una función más liviana, sin Prophet, arranca más rápido |
 | Una sola persona con todo el alcance | Plazo | Las fases priorizan lo crítico (privacidad, chatbot) antes que las mejoras |
 
-## 5. Decisiones pendientes (de Mery)
+## 5. Decisiones
+
+### Tomadas (2026-10-26)
+
+| Decisión | Resultado |
+|---|---|
+| Proveedores de LLM | Groq + Cloudflare Workers AI, con failover transparente (§3.1) |
+| Hosting | 100 % Vercel; sale Render (§3.7) |
+| Jobs programados | Solo GitHub Actions (RX-13) |
+| Backups | Diarios, cifrados, en Google Drive + snapshot antes de cada SQL (§3.10) |
+| Región | Funciones de Vercel en `gru1` (São Paulo), junto a Neon. Hobby admite 1 región; falta confirmarlo en el dashboard (T25) y que Mery confirme la región de Neon en su consola (§3.7, `verificaciones.md` §5) |
+| Modelo LLM | `openai/gpt-oss-20b` en los dos proveedores (`GROQ_MODEL`, `CLOUDFLARE_AI_MODEL=@cf/openai/gpt-oss-20b`), para que el estilo no cambie en el failover (§3.1) |
+| Privacidad de los proveedores LLM | Verificado: ninguno entrena con los datos. Groq con Zero Data Retention activado; Cloudflare sin AI Gateway con logging; ningún modelo Beta (RX-06, `verificaciones.md` §2-§3) |
+| Python | 3.12 en local, CI y Vercel (Vercel no soporta 3.11), fijado con `.python-version` (RX-12, T1) |
+| Capacidad del chatbot | ~1.000 respuestas/día por Groq + ~580 por Cloudflare antes de caer en el respaldo por reglas (estimado, §3.1) |
+| Marco legal | Colombia, Ley 1581 de 2012 (§3.9) |
+| Modelos ML | Se decide con la evaluación de T24 (§3.8). Si Prophet no aporta, sale junto con su stack (~410 MB), lo que deja el backend con holgura bajo los 500 MB de Vercel |
+
+### Pendientes
 
 | Decisión | Opciones | A favor | En contra |
 |---|---|---|---|
-| Región | Mover Neon junto a Render / dejarlo como está | Menos latencia por query | Requiere dump/restore |
-| Backups | PITR de Neon free / `pg_dump` cifrado en GitHub Actions | PITR: cero trabajo / pg_dump: control | PITR: ventana corta (NO VERIFICADO) / pg_dump: datos de salud en artifacts aunque estén cifrados |
 | Identidad | Mantener `"user"` + `users` documentado / unificar | Mantener: menos riesgo en S10 | Mantener: sigue la duplicación del email |
-| Modelos ML | Reentrenar bajo demanda / guardarlos en la tabla `ml_models` | Bajo demanda: simple | Bajo demanda: latencia en la primera predicción |
+| Proyectos en Vercel | Uno (frontend + `/api`) / dos (frontend y backend separados con rewrite) | Uno: un solo deploy | Uno: build más complejo |
+| Usuarias menores de 18 | Fuera de S10 / flujo con autorización del representante legal | Fuera: más simple | Fuera: deja afuera a adolescentes, que son parte del público de la app |

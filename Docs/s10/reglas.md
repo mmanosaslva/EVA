@@ -5,7 +5,7 @@
 > **Precedencia:** `restricciones.md` > `reglas.md` > `design.md` / `e2e.md` > resto de `Docs/`.
 > `Docs/contextoopencode.md`, `Docs/PROJECT.md`, `eva_contexto` y los docs de Fase 2 quedan como **históricos**: se consultan, pero no mandan.
 >
-> Última revisión: 2026-10-25.
+> Última revisión: 2026-10-26.
 
 ---
 
@@ -75,7 +75,7 @@ Además, se cumple el criterio específico de la tarea y se actualizan los docs 
 
 Servicios con contrato especial:
 - `ml_service.py`: solo entrena y predice. No importa `repositories/`. Lo orquesta `prediction_service.py`.
-- `llm_service.py`: solo la llamada HTTP al proveedor y el `SYSTEM_PROMPT`. No importa `repositories/`. Lo orquesta `insight_service.py`. Contenido permitido: RX-06.
+- `llm_service.py`: solo los adaptadores HTTP de los proveedores de RX-02 (Groq, Cloudflare Workers AI), el failover entre ellos y el `SYSTEM_PROMPT`. No importa `repositories/`. Lo orquesta `insight_service.py`, que decide el respaldo por reglas y guarda el proveedor usado. Contenido, orden y transparencia: RX-06.
 
 ### RG-08 — Base de datos
 - SQLAlchemy **Core**, sin ORM.
@@ -146,4 +146,11 @@ Revisión del 2026-10-25. Cada fila es un punto donde ambos documentos tocan el 
 | Idioma | — | RG-11: español (tú), identificadores en inglés | No | Coincide con la regla global de Mery (respuestas/comentarios en español, código en inglés) |
 | Formato de commit | — | RG-04: `[S10] tipo(scope):` | No | Es Conventional Commits con prefijo de sprint; cumple la regla global de usar Conventional Commits |
 | Offline | RX-08 no lo cubre | RG-09: Dexie es la fuente de verdad | No | Es una regla de arquitectura, no un límite externo |
-| Costo | RX-01 | RG-10: config por env | No | Cambiar de modelo vía `GROQ_MODEL` no agrega costo |
+| Costo | RX-01 | RG-10: config por env | No | Cambiar de modelo vía `GROQ_MODEL` / `CLOUDFLARE_AI_MODEL` no agrega costo |
+| Failover del LLM | RX-06: orden, transparencia, sin proveedor en la respuesta | RG-07: dónde vive cada parte | No | RX-06 define el *qué*; RG-07 asigna el failover a `llm_service` y el respaldo por reglas a `insight_service` |
+| Deploy serverless | RX-02 (Vercel) y RX-12 (sin estado entre requests) | RG-08: un solo engine y pool | No | En Vercel el pool es mínimo, pero sigue siendo uno solo y apunta al pooler (RX-09) |
+| Jobs y backups | RX-13: solo GitHub Actions, cifrado, sin artifacts | RG-14: instrumentación temporal | No | Temas distintos; los dos remiten a RX-05 para los logs |
+| Secretos de backup | RX-11 y RX-13 | RG-10: config por env | No | La clave pública de `age` va como secret; la privada nunca sale del poder de Mery |
+| Python | RX-12: 3.12 | RG-06: comandos de verificación | No | Los comandos de RG-06 se corren con el venv 3.12 |
+| Legal | RX-14 | RG-15: docs vivos | No | Los textos legales versionados son docs vivos: cambiar uno implica una versión nueva en `consents` |
+| Tests y servicios reales | RX-10 (incluye Cloudflare, Google Drive y la evaluación con datos sintéticos) | RG-13 | No | RG-13 remite a RX-10 |
