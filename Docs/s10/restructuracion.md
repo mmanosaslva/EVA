@@ -213,7 +213,10 @@ Restaurar Playwright con una arquitectura nueva: build de preview apuntando a un
 | Decisión | Resultado |
 |---|---|
 | Proveedores de LLM | Groq + Cloudflare Workers AI, con failover transparente (§3.1) |
-| Hosting | 100 % Vercel; sale Render (§3.7) |
+| Hosting | 100 % Vercel; sale Render (§3.7). **Deploy desde cero** en cuentas de Mery: no hay nada desplegado y el servicio de Render nunca existió (T25) |
+| Cuentas | Todo en cuentas de Mery: GitHub, Vercel, Neon, Brevo, Groq y Cloudflare. No se depende de cuentas del equipo anterior |
+| Emails | Brevo con remitente "EVA" sin dominio propio; riesgo de spam aceptado (`CRITERIOS_ISSUES.md` L-01) |
+| Sentry | Opcional; se configura después de T25. Sin `SENTRY_DSN` la app funciona igual |
 | Jobs programados | Solo GitHub Actions (RX-13) |
 | Backups | Diarios, cifrados, en Google Drive + snapshot antes de cada SQL (§3.10) |
 | Región | Funciones de Vercel en `gru1` (São Paulo), junto a Neon. Hobby admite 1 región; falta confirmarlo en el dashboard (T25) y que Mery confirme la región de Neon en su consola (§3.7, `verificaciones.md` §5) |

@@ -47,12 +47,13 @@
 | Cron jobs de Render | Mínimo de **$1/mes** por servicio, es decir, no son gratis (RX-01) | [Render — costos](https://render-www.onrender.com/articles/how-much-does-cloud-application-hosting-cost-for-small-businesses) |
 | ¿El repo es público? | **Sí**, así que los minutos de GitHub Actions son gratis y los artifacts los puede descargar cualquiera (RX-13) | `gh repo view --json visibility` |
 
+| Región de Neon | **`sa-east-1` (São Paulo).** El host del pooler en el `backend/.env.example` original era `…-pooler.sa-east-1.aws.neon.tech`, y la base es de Mery | `backend/.env.example` antes de T20 |
+
 ## 5. Sigue sin verificar
 
 | Punto | Por qué | Cuándo se resuelve |
 |---|---|---|
 | Que Hobby permita elegir `gru1` | La doc dice "una región", pero no cuáles | T25, en el dashboard de Vercel |
-| Región real de Neon (São Paulo) | Viene de la descripción del proyecto; no leí `DATABASE_URL` (RX-11) | Mery lo ve en la consola de Neon (Settings → Region) |
 | Cold start de las funciones de Vercel | Hay que medirlo | T15 |
 | Huérfanos en `users` por el bug de borrado | Requiere consultar Neon | T4 (consulta previa al SQL) |
 | E2E en local | Falta `libnspr4.so` en WSL | T8 (`sudo npx playwright install-deps chromium`) |

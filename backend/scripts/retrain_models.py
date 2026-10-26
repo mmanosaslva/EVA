@@ -1,6 +1,7 @@
 """Reentrena modelos Prophet para usuarias con datos nuevos.
 
-Ejecutado por Render como cron job a las 03:00 UTC.
+Hoy no corre programado (Render se retiró). Si la evaluación de T24 mantiene Prophet,
+se ejecuta bajo demanda o con GitHub Actions (Docs/s10/restricciones.md RX-13).
 Uso: python scripts/retrain_models.py
 """
 

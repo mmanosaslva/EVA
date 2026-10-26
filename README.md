@@ -39,7 +39,7 @@ EVA soluciona estos problemas con datos locales primero (sin venta a terceros), 
 | Testing backend | pytest + fixtures |
 | Testing E2E | Playwright |
 | Hosting frontend | Vercel |
-| Hosting backend | Render |
+| Hosting backend | Vercel (función Python; primer deploy en T25) |
 | CI/CD | GitHub Actions |
 | Monitoreo | Sentry (tier gratuito) |
 | Gestión | GitHub Projects |
@@ -146,7 +146,7 @@ backend/
 │   │   └── prediction.py
 │   ├── core/                      # Configuración transversal
 │   │   ├── db.py                  # Conexión PostgreSQL
-│   │   ├── security.py            # Validación JWT Supabase
+│   │   ├── security.py            # Usuario actual desde el JWT propio (fastapi-users)
 │   │   └── config.py              # Variables de entorno
 │   └── ml_models/                 # Archivos .pkl por usuaria
 │       └── user_{uuid}.pkl
