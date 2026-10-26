@@ -8,11 +8,23 @@
 
 ---
 
+## Avance (2026-10-26)
+
+| Hecho | Evidencia |
+|---|---|
+| T0: `Prueba3` mergeada en `develop` | PR #131, merge `df0c9c8` |
+| Ruff fijado a la versión de `requirements-dev.txt` y reglas explícitas en `backend/ruff.toml` | `9617c04` |
+| Secretos de BD real quitados del paso de tests de `backend.yml` (DP-08, en parte) | `9617c04` |
+| DP-03 resuelto: `requests` declarado | `b4bfc4d` |
+| DP-10 resuelto: tests de auth y export actualizados | `b4bfc4d` |
+| DP-11 reclasificado y resuelto: era un error del test, no del repositorio | `b4bfc4d` |
+| CI de backend en verde: lint OK, pytest 203 pasan, 0 fallan | Run `40216359589` |
+
 ## Estado base medido (2026-10-25)
 
 | Comando | Resultado |
 |---|---|
-| `pytest -q` | **10 fallos**, 196 pasan |
+| `pytest -q` | **10 fallos**, 196 pasan (resuelto: ver Avance) |
 | `ruff check .` | **11 errores** (ninguno en `app/`) |
 | `npx vitest run` | 8/8 (un solo archivo: `Button.test.tsx`) |
 | `npx eslint .` | 0 |
@@ -29,15 +41,15 @@
 |---|---|---|---|---|---|---|
 | DP-01 | alta | Código de Ollama (prohibido, RX-03) | `services/llm_service.py:10-11,44-59,157-163`; `core/config.py:9`; `.env.example:12`; `tests/test_llm_service.py`; `scripts/verify_ml_env.py` | Eliminar | `grep -rni ollama backend/` = 0 | T3 |
 | DP-02 | alta | Modelo Groq retirado y hardcodeado: `llama3-8b-8192` (apagado 2025-08-30) | `services/llm_service.py:14` | Usar `GROQ_MODEL` por env, default `openai/gpt-oss-20b` | Test de config + prueba manual local | T3 |
-| DP-03 | alta | `requests` se importa pero no está en `requirements.txt` | `auth/email.py:3` | Declararlo (ya está en el WIP local) | `pip install -r requirements.txt` en un venv limpio + `import app.main` | T1 |
+| DP-03 | alta | **[RESUELTO `b4bfc4d`]** `requests` se importa pero no está en `requirements.txt` | `auth/email.py:3` | Declararlo (ya está en el WIP local) | `pip install -r requirements.txt` en un venv limpio + `import app.main` | T1 |
 | DP-04 | alta | `SECRET_KEY` vale `""` por defecto, así que el JWT se firmaría con clave vacía | `core/config.py:5`, `auth/setup.py:19` | Validar al arrancar: obligatoria y ≥ 32 caracteres | Test: el arranque falla sin la variable | T6 |
 | DP-05 | media | Violaciones de SRP | `routers/insights.py:11` importa `insight_repo`; `services/llm_service.py:7` importa 4 repos | Crear `services/insight_service.py` | `grep -rn "repositories" app/routers app/services/llm_service.py` = 0 | T3 |
 | DP-06 | media | Logs con datos protegidos (RX-05) | `auth/email.py:26` (email); `services/ml_service.py:86` (user_id + MAE) | Loguear solo el evento y el status | grep manual + revisión del PR | T10 |
 | DP-07 | alta | Dos `render.yaml` distintos; el de backend lleva vars Supabase/Ollama y un disco de pago (RX-01) | `backend/render.yaml:10-16,29-32,42-46`; `render.yaml` (raíz) | Dejar solo el de la raíz, sin disco y con `GROQ_MODEL` y `PYTHON_VERSION=3.11` | Existe un solo archivo y `grep -i "supabase\|ollama\|disk"` = 0 | T7 |
 | DP-08 | alta | CI con secretos Supabase y E2E comentado | `.github/workflows/backend.yml:56-57`; `frontend.yml:53-54,58-78`; `lighthouse.yml:32-33` | Quitar los secretos y reactivar E2E | `grep -ri supabase .github` = 0 | T7, T8 |
-| DP-09 | media | Dos engines/pools (5+5 y 2+5); el de core sin `pool_pre_ping`; la rama SQLite de `core/db.py` es inválida | `core/db.py:28,30`; `auth/db.py` | Un solo engine en `core/db.py`, que `auth/` reutiliza | `grep -rn create_async_engine app/` = 1 | T11 |
-| DP-10 | alta | Tests obsoletos | `tests/test_security.py::TestJWTJWKSErrorHandling` (5, parchean `_get_jwks_client`, que ya no existe); `tests/test_export_service.py` (4, parchean `get_logs_by_cycle`) | Reescribirlos contra fastapi-users y la API batch | `pytest -q` sin fallos | T5 |
-| DP-11 | alta | Se pasan ids como `str` a `in_()` sobre una columna UUID: `'str' object has no attribute 'hex'` | `repositories/symptom_repo.py:71` ← `services/symptom_service.py:87` | Convertir a `uuid.UUID` en el repo | Pasa `test_valid_uuid_returns_logs`. En Postgres: NO VERIFICADO | T5 |
+| DP-09 | media | El engine de `core/db.py` no tiene `pool_pre_ping` y su rama para URLs no Postgres pasa `pool_size` a SQLite (`TypeError` al importar). *Corrección 2026-10-26: el diagnóstico decía "dos engines", pero eso venía del WIP local; en `develop`, `auth/db.py` ya reutiliza el engine de core (`auth/db.py:5`)* | `core/db.py:28,30` | Agregar `pool_pre_ping=True` y que la rama no Postgres no pase argumentos de pool | `grep -rn create_async_engine app/` = 2 líneas en `core/db.py`, ambas válidas | T11 |
+| DP-10 | alta | **[RESUELTO `b4bfc4d`]** Tests obsoletos | `tests/test_security.py::TestJWTJWKSErrorHandling` (5, parchean `_get_jwks_client`, que ya no existe); `tests/test_export_service.py` (4, parchean `get_logs_by_cycle`) | Reescribirlos contra fastapi-users y la API batch | `pytest -q` sin fallos | T5 |
+| DP-11 | media | **[RESUELTO `b4bfc4d`]** `test_valid_uuid_returns_logs` fallaba con `'str' object has no attribute 'hex'`. *Corrección 2026-10-26: no era un bug del repositorio; el test parcheaba `get_symptoms_by_log` en lugar de `get_symptoms_by_log_ids`, así que la consulta real corría sin mock* | `tests/test_symptom_service.py` | Parchear la función batch | Pasa el test | T5 |
 | DP-12 | baja | 11 errores de ruff | `migrations/versions/006,007,008` (F401); `scripts/audit_pkl_privacy.py:15`; `scripts/verify_ml_env.py:39,41,92`; `tests/test_config.py:4`; `tests/test_llm_service.py:1`; `tests/test_metadata.py:22`; `tests/test_sync_service.py:1` | `ruff check --fix` + arreglos manuales | `ruff check .` = 0 | T5 |
 | DP-13 | **crítica** | El borrado de cuenta elimina solo `"user"`; los datos (FK a `users`) quedan. La lógica y el SQL viven en el router | `routers/auth.py:14-23`; `migrations/versions/008_fix_profile_trigger.py:22-34`; `models/db_tables.py:22` | Borrado total en un servicio + FK en cascada (SQL manual, RX-09) + borrar el `.pkl` | Test SQLite: 0 filas en todas las tablas del usuario | T4 |
 | DP-14 | **crítica** | El trigger reasigna `users` por email, así que un re-registro hereda datos ajenos | `008_fix_profile_trigger.py:44-48` + `onupdate="CASCADE"` (`:33`) | Quitar la rama `IF FOUND` | Test: un re-registro con el mismo email ve 0 ciclos | T4 |

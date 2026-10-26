@@ -17,7 +17,7 @@
   2. Borrado de cuenta: no borra los datos de salud y el trigger puede reasignarlos (DP-13, DP-14).
   3. Offline: Dexie no está conectado (DP-18).
   4. E2E: la suite está pensada para Supabase y desactivada en CI (DP-28, DP-08).
-  5. 10 tests rojos y 11 errores de ruff (DP-10 a DP-12).
+  5. 10 tests rojos y 11 errores de ruff (DP-10 a DP-12). *Actualización 2026-10-26: los tests ya están en verde (`b4bfc4d`); quedan los errores de ruff fuera de `app/`.*
 
 ## 2. Objetivos de S10 (medibles)
 

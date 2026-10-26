@@ -27,13 +27,21 @@ Orden crítico: **T0 → T1 → T2 → T3 → T4 → T5**. Desde T6 se puede aju
 ## Fase 0 — Preparación
 
 ### T0 — Consolidar Prueba3 en develop
+- **Estado:** HECHA (2026-10-25). PR #131, merge `df0c9c8`. Además incluyó `9617c04` (ruff en CI) y `b4bfc4d` (`requests` + tests), que dejaron el CI en verde.
 - **Qué:** PR `Prueba3 → develop` en GitHub. Es fast-forward y no cambia código.
 - **Depende de:** —
 - **Hecho cuando:** `git rev-list --count origin/develop..origin/Prueba3` = 0.
-- **Excepción a RG-06:** la base todavía tiene 10 tests rojos (se arreglan en T5). Se registra en el PR.
+- **Excepción a RG-06:** al abrir el PR la base tenía 10 tests rojos; se arreglaron en el mismo PR (`b4bfc4d`).
 - **Rama:** — (PR directo).
 
 ### T1 — Rescatar el WIP local
+- **Estado (2026-10-26):** casi vacía.
+  - El WIP está respaldado en `/home/mery/projects/EVA-respaldo-2026-10-25/` y el repo local se limpió.
+  - `requests` y `test_security.py` entraron en `b4bfc4d`.
+  - `rate_limiter.py` ya estaba en `develop`.
+  - `auth/db.py` y `conftest.py` quedaron obsoletos.
+  - `useAuth.ts` y `VerifyEmailPage.tsx` (no llamar a `setState` dentro de `useEffect`) pasan a T13.
+  - Queda **solo** recrear el venv con Python 3.11, que no está instalado en el sistema.
 - **Qué:** pasar los 7 archivos sin commit de `feature/auth_gateway` a una rama nueva desde `develop`, y recrear el venv con Python 3.11.
 - **Cierra:** DP-03, DP-17.
 - **Pasos:**
@@ -102,6 +110,7 @@ Orden crítico: **T0 → T1 → T2 → T3 → T4 → T5**. Desde T6 se puede aju
 - **Commit:** `[S10] fix(privacy): borrado total de cuenta sin datos huérfanos ni reasignación`.
 
 ### T5 — Tests y lint en verde
+- **Estado (2026-10-26):** DP-10 y DP-11 hechos en `b4bfc4d`. Queda DP-12 (11 errores de ruff fuera de `app/`).
 - **Cierra:** DP-10, DP-11, DP-12.
 - **Depende de:** T1.
 - **Hecho cuando:** `pytest -q` = 0 fallos y `ruff check .` = 0.
@@ -163,7 +172,7 @@ Orden crítico: **T0 → T1 → T2 → T3 → T4 → T5**. Desde T6 se puede aju
 ### T11 — Un solo engine de BD
 - **Cierra:** DP-09.
 - **Depende de:** T1, T5.
-- **Hecho cuando:** `grep -rn create_async_engine backend/app` = 1, con `pool_pre_ping=True`, y la conexión sigue yendo por el pooler (RX-09).
+- **Hecho cuando:** el engine de `core/db.py` usa `pool_pre_ping=True`, la rama no Postgres no pasa argumentos de pool, y la conexión sigue yendo por el pooler (RX-09). (`auth/db.py` ya reutiliza este engine.)
 - **Rama:** `refactor/meriyei/s10-pool-unico`.
 - **Commit:** `[S10] refactor(db): unificar engine y pool de conexiones`.
 
