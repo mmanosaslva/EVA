@@ -82,7 +82,8 @@ T0 ✔ → T2 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 
     - `SYSTEM_PROMPT` de `60da7fe`;
     - un adaptador por proveedor: Groq (API compatible con OpenAI) y Cloudflare (`POST /accounts/{account_id}/ai/run/{model}`);
     - `generate(prompt) -> LlmResult | None`, que recorre los proveedores en orden y salta los que están en enfriamiento.
-    - El modelo de Cloudflare se elige del catálogo vigente al implementar (NO VERIFICADO cuál sigue disponible).
+    - Modelos: `GROQ_MODEL=openai/gpt-oss-20b` y `CLOUDFLARE_AI_MODEL=@cf/openai/gpt-oss-20b` (el mismo en los dos; alternativa `@cf/zai-org/glm-4.7-flash`). No usar `@cf/meta/llama-3.1-8b-instruct`, que ya no está en el catálogo (`verificaciones.md` §3).
+    - El enfriamiento tras un 429 de Groq usa el header `retry-after`.
   - Nuevo `services/insight_service.py`: contexto, sanitización, llamada a `generate`, respaldo por reglas y guardado. El proveedor usado se guarda en `llm_insights` y no se devuelve al frontend.
   - `routers/insights.py`: llama solo al servicio. La respuesta no lleva campo de proveedor ni de modelo; lleva `is_automatic: bool` (true solo en el respaldo por reglas).
   - `tests/test_llm_service.py` y nuevo `tests/test_insight_service.py`.
@@ -103,7 +104,8 @@ T0 ✔ → T2 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 
   - `grep -rn "repositories" app/routers/insights.py app/services/llm_service.py` = 0.
   - Prueba manual en local con las keys de Mery: con las dos keys responde Groq; con una key de Groq inválida responde Cloudflare, y el frontend se ve igual en los dos casos.
 - **Manual (Mery):**
-  - Crear la cuenta gratuita de Cloudflare y un API token con permiso solo de Workers AI.
+  - Crear la cuenta gratuita de Cloudflare y un API token con permiso solo de Workers AI. No activar AI Gateway con logging.
+  - En Groq: activar **Zero Data Retention** (Settings → Data Controls) y revisar los límites reales en `settings/limits`.
   - Configurar las variables en el hosting actual. Al migrar (T25), pasan a Vercel.
 - **Rama:** `fix/meriyei/s10-llm-cloud`.
 - **Commit:** `[S10] fix(llm): chatbot con Groq y Cloudflare Workers AI con failover y respaldo por reglas`.
@@ -360,8 +362,9 @@ T0 ✔ → T2 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 
     - Reemplazar el rate limit en memoria de slowapi (`core/rate_limiter.py:25`) por un contador en Neon, como mínimo para `/insights` y `/auth/*`.
     - La caché del catálogo de síntomas (`symptom_service.py:27`) puede quedarse: solo dura lo que la instancia caliente.
   - **Conexiones:** pool mínimo o `NullPool` contra el pooler de Neon (RX-09).
-  - **Región de las funciones:** São Paulo (`gru1`), junto a Neon, si el plan Hobby lo permite (NO VERIFICADO).
-  - **Tamaño del bundle:** el límite de las funciones es de unos 250 MB (NO VERIFICADO). Depende de T24: Prophet probablemente no cabe.
+  - **Región de las funciones:** `gru1` (São Paulo) con `regions` en `vercel.json`. Hobby permite una región; si el dashboard no deja elegir `gru1`, se documenta y se mide la alternativa.
+  - **Python:** fijar 3.12 con `.python-version`.
+  - **Tamaño del bundle:** el límite es de 500 MB sin comprimir y el stack de ML mide ~410 MB (`verificaciones.md` §1). Depende de T24.
   - **Cron de reentrenamiento:** sale; si T24 necesita un job, va en GitHub Actions (RX-13).
   - **Mismo origen:** el frontend reescribe `/api/*` hacia el backend, así se elimina el CORS entre dominios. Se decide al implementar: un proyecto o dos.
   - **Limpieza:** borrar `render.yaml` y `backend/render.yaml`; actualizar `DEPLOY.md`, `DEPLOY_CHECKLIST.md`, `GUIA_ENV.md`.

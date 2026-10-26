@@ -91,6 +91,10 @@ Toda restricción que diga "datos protegidos" se refiere a la unión de ambas li
   - Modelos: `GROQ_MODEL`, `CLOUDFLARE_AI_MODEL`.
   - Orden de proveedores: `LLM_PROVIDERS=groq,cloudflare`.
   - Credenciales: `GROQ_API_KEY`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`.
+- **Términos de datos verificados** (`verificaciones.md` §2-§3):
+  - Groq no entrena con los datos (Services Agreement §4.2), y se activa Zero Data Retention.
+  - Cloudflare no entrena con los datos y no los retiene. Prohibido usar AI Gateway con logging o caché.
+  - En ninguno de los dos se usan modelos marcados como Beta.
 - La usuaria nunca recibe un 503 por falta de LLM.
 
 ## RX-07 — Recursos de terceros en el navegador
@@ -131,7 +135,7 @@ Toda restricción que diga "datos protegidos" se refiere a la unión de ambas li
 
 ## RX-12 — Runtime
 
-- Python **3.12** en Vercel, en el CI (`backend.yml` ya usa 3.12) y en el venv local (hoy el venv local es 3.14.6; ver DP-17). NO VERIFICADO: la lista de versiones que acepta el runtime Python de Vercel; se confirma en T25.
+- Python **3.12** en Vercel, en el CI (`backend.yml` ya usa 3.12) y en el venv local (hoy el venv local es 3.14.6; ver DP-17). Vercel acepta 3.12 (por defecto), 3.13 y 3.14; 3.11 no está soportada. La versión se fija con `.python-version` (ver `verificaciones.md` §1).
 - Node 22 LTS para el frontend.
 - **Serverless:** el backend no guarda estado entre requests: nada de caché en memoria que deba persistir, tareas en segundo plano (`asyncio.create_task` en startup), archivos en disco ni rate limit en memoria (ver DP-43).
 

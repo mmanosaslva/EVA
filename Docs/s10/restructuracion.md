@@ -68,7 +68,11 @@ routers/insights.py ──► services/insight_service.py ──┬─► reposi
   4. Si ningún proveedor responde, usa el **respaldo por reglas**: plantillas por fase y síntoma frecuente.
   5. Guarda el insight con el proveedor usado (`groq`, `cloudflare` o `rules`), solo para métricas internas.
 - **Contrato con el frontend:** `{ insight, disclaimer, is_automatic }`. **No incluye proveedor ni modelo**, así que cambiar de Groq a Cloudflare es invisible para la usuaria (RX-06). Solo `is_automatic=true` muestra la etiqueta "Respuesta automática" (`design.md` §2).
-- **Por qué estos dos:** según comparativas de 2026, ambos tienen plan gratuito sin tarjeta y no entrenan con datos de la API (Groq ~30 peticiones/min y ~1.000/día; Cloudflare, 10.000 "neurons"/día). Los límites cambian seguido: se verifican en la consola de cada uno al implementar.
+- **Por qué estos dos** (verificado en sus docs oficiales, `verificaciones.md` §2-§3):
+  - Los dos son gratis y por contrato no entrenan con los datos.
+  - **Groq:** `openai/gpt-oss-20b`, con 30 peticiones/min y 1.000/día; devuelve 429 con `retry-after` al pasarse.
+  - **Cloudflare:** `@cf/openai/gpt-oss-20b`, el mismo modelo, así que el estilo de las respuestas no cambia. Tiene 10.000 neurons/día (~580 respuestas) y 300 peticiones/min.
+  - En la práctica: hasta ~1.000 respuestas al día por Groq y ~580 más por Cloudflare antes de caer en el respaldo por reglas.
 - **Descartados:**
   - Gemini free, porque puede entrenar con los datos (RX-03).
   - Mistral free, porque las fuentes dicen que exige aceptar el entrenamiento.
@@ -103,7 +107,7 @@ Restaurar Playwright con una arquitectura nueva: build de preview apuntando a un
 ### 3.5 Rendimiento
 
 - **Hipótesis principal:** la latencia viene de la red (hoy Render sin región declarada, posiblemente en EE. UU.; Neon en São Paulo) multiplicada por las queries secuenciales, más el cold start de Render free, que se duerme a los 15 minutos. No del lenguaje.
-- **La migración a Vercel (§3.7) ataca la causa principal:** las funciones se pueden ubicar en São Paulo (`gru1`), junto a Neon (NO VERIFICADO en el plan Hobby).
+- **La migración a Vercel (§3.7) ataca la causa principal:** las funciones se pueden ubicar en São Paulo (`gru1`, una de las regiones de Vercel), junto a Neon. Hobby permite **una** región; que permita elegir `gru1` se confirma en el dashboard (`verificaciones.md` §1).
 - **Método** (después de T25, sobre Vercel): instrumentación temporal (RG-14):
   - Middleware con `ContextVar` que cuenta queries y tiempo de BD (eventos `before/after_cursor_execute`).
   - Header `Server-Timing`.
@@ -152,8 +156,8 @@ Restaurar Playwright con una arquitectura nueva: build de preview apuntando a un
 | Pool de 5+5 conexiones | Pool mínimo / `NullPool` contra el pooler de Neon |
 
 - **Riesgos:**
-  - El límite de tamaño de las funciones, de unos 250 MB (NO VERIFICADO): Prophet + cmdstan probablemente no caben.
-  - El tiempo máximo por función: alcanza para las llamadas al LLM, que tienen timeout.
+  - **Tamaño:** el límite es de 500 MB sin comprimir. Solo el stack de ML (Prophet, numpy, pandas, scipy, scikit-learn, matplotlib) mide ~410 MB, así que con Prophet queda al límite y sin él sobra espacio (`verificaciones.md` §1).
+  - **Tiempo:** 300 s por request en Hobby, de sobra para las llamadas al LLM, que tienen timeout.
   - El plan Hobby es para uso no comercial, lo que es compatible con un proyecto académico.
 
 ### 3.8 Predicción: ¿Prophet o algo más simple?
