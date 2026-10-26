@@ -31,7 +31,7 @@ cd frontend
 npm install
 ```
 
-> **Nota**: El archivo `.env.example` se creará cuando se implemente Supabase Auth (Issue #14). Por ahora no es necesario.
+> **Nota**: copia `.env.example` a `.env` y ajusta `VITE_API_URL` (por defecto `http://localhost:8000`).
 
 ## Scripts disponibles
 
@@ -130,7 +130,6 @@ Estrategia **autoUpdate**: el Service Worker se registra y actualiza automática
 | Recurso | Estrategia | Descripción |
 |---------|------------|-------------|
 | Assets estáticos | `CacheFirst` | JS, CSS, HTML, imágenes, fuentes |
-| API Supabase | `NetworkFirst` | Cache 50 entradas, expira 1 hora |
 
 ### Probar PWA en dispositivo móvil
 

@@ -7,15 +7,19 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_JWT_SECRET
-        sync: false
-      - key: OLLAMA_BASE_URL
+      - key: SECRET_KEY
         sync: false
       - key: GROQ_API_KEY
+        sync: false
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_API_TOKEN
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: FRONTEND_URL
         sync: false
       - key: SENTRY_DSN
         sync: false
@@ -38,12 +42,6 @@ services:
     startCommand: python scripts/retrain_models.py
     envVars:
       - key: DATABASE_URL
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_JWT_SECRET
         sync: false
       - key: ENVIRONMENT
         value: production

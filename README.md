@@ -146,7 +146,7 @@ backend/
 │   │   └── prediction.py
 │   ├── core/                      # Configuración transversal
 │   │   ├── db.py                  # Conexión PostgreSQL
-│   │   ├── security.py            # Validación JWT Supabase
+│   │   ├── security.py            # Usuario actual desde el JWT propio (fastapi-users)
 │   │   └── config.py              # Variables de entorno
 │   └── ml_models/                 # Archivos .pkl por usuaria
 │       └── user_{uuid}.pkl

@@ -60,15 +60,6 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\/.*/],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "supabase-api",
-              expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 },
-              networkTimeoutSeconds: 5,
-            },
-          },
-          {
             urlPattern: /^http:\/\/(localhost|192\.168\.\d+\.\d+):\d+\/.*/i,
             handler: "NetworkFirst",
             options: {

@@ -49,14 +49,10 @@ jobs:
 
       - name: Build
         if: steps.check.outputs.exists == 'true'
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: npm run build
         working-directory: frontend
 
-      # E2E (Playwright) — SUSPENDIDO temporalmente (issues #27, #38, #52, #55)
-      # No reactiver hasta tener deploy a Vercel + Render.
+      # E2E (Playwright): se reactiva en T8 con la red 100 % mockeada (Docs/s10/e2e.md §7)
       # - name: Install Playwright browsers
       #   if: steps.check.outputs.exists == 'true'
       #   run: npx playwright install chromium
@@ -64,9 +60,6 @@ jobs:
       #
       # - name: Run E2E tests
       #   if: steps.check.outputs.exists == 'true'
-      #   env:
-      #     VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      #     VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       #   run: npm run test:e2e
       #   working-directory: frontend
       #

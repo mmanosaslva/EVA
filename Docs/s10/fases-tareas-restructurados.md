@@ -22,7 +22,7 @@
 
 **Orden de ejecución (2026-10-26):**
 
-T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T24 → T25 → T15 → T16 → T17 → T18 → T19
+T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T20 ✔ → T4 → T22 → T23 → T5 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T24 → T25 → T15 → T16 → T17 → T18 → T19
 
 - T1 ahora es solo el entorno local con Python 3.12; se puede hacer en cualquier momento antes de T3.
 - T7 se fusionó en T20 (CI sin Supabase) y T25 (fuera Render).
@@ -264,6 +264,7 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T20 → T4 → T22 → T23 → T5 �
 ## Tareas agregadas el 2026-10-26
 
 ### T20 — Supabase cero
+- **Estado:** código HECHO (2026-10-26). `backend/app/.env` borrado el mismo día. Falta la parte manual de Mery: secrets `SUPABASE_*` en GitHub y variables en el hosting.
 - **Qué:** que **nada** apunte a Supabase (RX-03). Lo que se elimina:
   - Secretos `SUPABASE_*` / `VITE_SUPABASE_*` de `frontend.yml:53-54,68-69` y `lighthouse.yml:32-33`.
   - Variables `SUPABASE_*` de `backend/render.yaml` (el archivo entero sale en T25).
