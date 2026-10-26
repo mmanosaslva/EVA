@@ -22,7 +22,7 @@
 
 **Orden de ejecución (2026-10-26):**
 
-T0 ✔ → T2 → T1 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T24 → T25 → T15 → T16 → T17 → T18 → T19
+T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T24 → T25 → T15 → T16 → T17 → T18 → T19
 
 - T1 ahora es solo el entorno local con Python 3.12; se puede hacer en cualquier momento antes de T3.
 - T7 se fusionó en T20 (CI sin Supabase) y T25 (fuera Render).
@@ -60,6 +60,7 @@ T0 ✔ → T2 → T1 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 
 - **Commit:** `[S10] chore: fijar Python 3.12 para backend local, CI y Vercel`.
 
 ### T2 — Publicar las reglas de S10
+- **Estado:** HECHA (2026-10-26). Docs en #132 y #133; cabeceras HISTÓRICO en `contextoopencode.md` y `eva_contexto`.
 - **Qué:** commitear `Docs/s10/` (los 7 documentos) y marcar `Docs/contextoopencode.md` y `eva_contexto` como HISTÓRICO (RG-15).
 - **Depende de:** T0.
 - **Hecho cuando:** `Docs/s10/` está en `develop` y las cabeceras HISTÓRICO están puestas.
