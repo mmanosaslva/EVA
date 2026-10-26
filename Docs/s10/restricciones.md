@@ -22,7 +22,7 @@
 - Ejemplos ya rechazados:
   - Los *persistent disks* de Render (`backend/render.yaml:29-32`).
   - Los *cron jobs* de Render, que cobran un mínimo de $1/mes por servicio (`render.yaml:9-14`).
-  - Ambos desaparecen con la migración a Vercel (T25).
+  - Ambos se eliminaron del repo en T20: el servicio de Render nunca llegó a existir (confirmado por Mery el 2026-10-26).
 
 ## RX-02 — Stack fijo
 

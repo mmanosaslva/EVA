@@ -39,7 +39,7 @@ EVA soluciona estos problemas con datos locales primero (sin venta a terceros), 
 | Testing backend | pytest + fixtures |
 | Testing E2E | Playwright |
 | Hosting frontend | Vercel |
-| Hosting backend | Render |
+| Hosting backend | Vercel (función Python; primer deploy en T25) |
 | CI/CD | GitHub Actions |
 | Monitoreo | Sentry (tier gratuito) |
 | Gestión | GitHub Projects |

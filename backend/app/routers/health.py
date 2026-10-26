@@ -7,7 +7,7 @@ router = APIRouter()
 async def health_check() -> dict:
     """
     Verifica que el servidor está activo.
-    Usado por Render para health checks — no requiere auth.
+    Usado para health checks del hosting y del monitoreo — no requiere auth.
     """
     return {
         "status": "ok",

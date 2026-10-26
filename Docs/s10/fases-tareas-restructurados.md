@@ -264,7 +264,7 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T20 ✔ → T4 → T22 → T23 → T
 ## Tareas agregadas el 2026-10-26
 
 ### T20 — Supabase cero
-- **Estado:** código HECHO (2026-10-26). `backend/app/.env` borrado el mismo día. Falta la parte manual de Mery: secrets `SUPABASE_*` en GitHub y variables en el hosting.
+- **Estado:** HECHA (2026-10-26). `backend/app/.env` borrado. No había secrets `SUPABASE_*` en GitHub ni servicio en Render (confirmado por Mery), así que además se borraron los dos `render.yaml` (DP-07).
 - **Qué:** que **nada** apunte a Supabase (RX-03). Lo que se elimina:
   - Secretos `SUPABASE_*` / `VITE_SUPABASE_*` de `frontend.yml:53-54,68-69` y `lighthouse.yml:32-33`.
   - Variables `SUPABASE_*` de `backend/render.yaml` (el archivo entero sale en T25).
@@ -357,8 +357,9 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T20 ✔ → T4 → T22 → T23 → T
 - **Rama:** `feat/meriyei/s10-evaluacion-prediccion`.
 - **Commit:** `[S10] feat(ml): evaluar métodos de predicción y adoptar el de menor error`.
 
-### T25 — Migrar el deploy a Vercel (fuera Render)
-- **Qué:** el backend FastAPI pasa a una función Python de Vercel; Render se elimina (RX-02, RX-03).
+### T25 — Primer deploy del backend en Vercel
+- **Contexto (2026-10-26):** el backend **no está desplegado en ningún lado**. El servicio de Render nunca existió (los `render.yaml` se borraron en T20). Sin esta tarea, la app en producción no tiene API.
+- **Qué:** desplegar FastAPI como función Python de Vercel (RX-02).
   - **Estado entre requests (DP-43):**
     - Quitar el keepalive de startup (`main.py:63-80`): en serverless no hay tareas en segundo plano.
     - Reemplazar el rate limit en memoria de slowapi (`core/rate_limiter.py:25`) por un contador en Neon, como mínimo para `/insights` y `/auth/*`.
@@ -369,19 +370,17 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T20 ✔ → T4 → T22 → T23 → T
   - **Tamaño del bundle:** el límite es de 500 MB sin comprimir y el stack de ML mide ~410 MB (`verificaciones.md` §1). Depende de T24.
   - **Cron de reentrenamiento:** sale; si T24 necesita un job, va en GitHub Actions (RX-13).
   - **Mismo origen:** el frontend reescribe `/api/*` hacia el backend, así se elimina el CORS entre dominios. Se decide al implementar: un proyecto o dos.
-  - **Limpieza:** borrar `render.yaml` y `backend/render.yaml`; actualizar `DEPLOY.md`, `DEPLOY_CHECKLIST.md`, `GUIA_ENV.md`.
-- **Cierra:** DP-07, DP-40, DP-43.
+  - **Docs:** actualizar `DEPLOY.md`, `DEPLOY_CHECKLIST.md` y `GUIA_ENV.md` para Vercel.
+- **Cierra:** DP-43.
 - **Depende de:** T24.
 - **Manual (Mery):**
-  - Crear o ajustar los proyectos en Vercel y cargar las variables de entorno.
-  - Actualizar `FRONTEND_URL` y las URLs de los emails de Brevo.
-  - Apagar y borrar los servicios de Render cuando Vercel esté verificado.
+  - Crear el proyecto del backend en Vercel y cargar las variables de entorno (`DATABASE_URL`, `SECRET_KEY`, Groq, Cloudflare, Brevo, `FRONTEND_URL`, `CORS_ORIGINS`).
+  - Apuntar `VITE_API_URL` del frontend a la URL del backend (o a `/api` si queda en el mismo origen).
+  - Actualizar `FRONTEND_URL` para los links de los emails de Brevo.
 - **Hecho cuando:**
   - Login, registro, chatbot, export y borrado de cuenta funcionan en la URL de Vercel (prueba manual de Mery, anotada en el PR).
-  - `git grep -nIi render -- . ':!Docs' ':!docs'` no encuentra configuración de Render.
-  - Los servicios de Render están eliminados.
 - **Rama:** `feat/meriyei/s10-deploy-vercel`.
-- **Commit:** `[S10] feat(deploy): migrar backend a Vercel y retirar Render`.
+- **Commit:** `[S10] feat(deploy): primer deploy del backend en Vercel`.
 
 ---
 
@@ -403,8 +402,8 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T20 ✔ → T4 → T22 → T23 → T
 | T14 | 32 |
 | T17 | 18, 20 |
 | T18 | 29 |
-| T20 | 08 (secretos), 19, 41, 45 |
+| T20 | 07, 08 (secretos), 19, 41, 45 |
 | T22 | 38, 44 |
 | T23 | 42 |
-| T24 | 15, 40 (cron) |
-| T25 | 07, 40, 43 |
+| T24 | 15, 40 |
+| T25 | 43 |
