@@ -1,3 +1,7 @@
+> **HISTÓRICO — reemplazado por [`Docs/s10/`](s10/) (2026-10-26).**
+> No usar como referencia: describe un estado anterior (Supabase, Ollama, Render, equipo de 4) que ya no aplica.
+> Lo vigente está en `restricciones.md`, `reglas.md` y `fases-tareas-restructurados.md`.
+
 # EVA — Contexto OpenCode
 
 > Documento generado para que OpenCode entienda el estado actual del proyecto, los cambios implementados, la atribución de responsabilidades y la deuda técnica pendiente.
