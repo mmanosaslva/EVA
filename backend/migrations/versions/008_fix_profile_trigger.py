@@ -10,7 +10,6 @@ con nuevas cuentas de auth, y cambia los FK a ON UPDATE CASCADE.
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 revision: str = "008"

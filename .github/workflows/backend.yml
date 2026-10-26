@@ -31,7 +31,7 @@ jobs:
         run: pip install "$(grep -E '^ruff==' backend/requirements-dev.txt)"
 
       - name: Run Ruff
-        run: ruff check backend/app/
+        run: ruff check backend/
 
   test:
     name: Test (pytest)

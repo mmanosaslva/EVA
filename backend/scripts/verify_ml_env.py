@@ -35,9 +35,9 @@ def check_prophet() -> bool:
     try:
         from prophet import Prophet
 
-        m = Prophet()
+        Prophet()
         print(f"  [OK] prophet == {Prophet.__module__}")
-        print(f"        Prophet() created successfully")
+        print("        Prophet() created successfully")
         return True
     except Exception as e:
         print(f"  [FAIL] prophet — {e}")

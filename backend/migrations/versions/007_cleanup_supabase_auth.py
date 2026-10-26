@@ -9,7 +9,6 @@ Limpia triggers y estructuras heredadas de Supabase Auth que ya no se usan.
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 
 revision: str = "007"
