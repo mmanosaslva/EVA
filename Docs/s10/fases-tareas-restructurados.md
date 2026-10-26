@@ -16,16 +16,17 @@
 | Fase | Tareas | Objetivo |
 |---|---|---|
 | 0 — Preparación | T0–T2 | Base única, sin perder trabajo, con las reglas en el repo |
-| 1 — Restauración | T3, T20, T4, T22, T23, T5, T6, T8, T9 | Chatbot, cero Supabase, privacidad, marco legal, backups, tests y E2E |
+| 1 — Restauración | T3, T20, T4, T24, T25, T22, T23, T5, T6, T8, T9 | Chatbot, cero Supabase, privacidad, **app desplegada desde cero**, marco legal, backups, tests y E2E |
 | 2 — Depuración | T10–T12, T21, T13, T14 | Código y docs limpios según `depuracion.md`, con prototipos antes de tocar la UI |
-| 3 — Mejora | T24, T25, T15–T19 | Predicción evaluada, deploy 100 % Vercel, latencia medida, offline real, `main` al día |
+| 3 — Mejora | T15–T19 | Latencia medida, offline real, cobertura y `main` al día |
 
 **Orden de ejecución (2026-10-26):**
 
-T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T20 ✔ → T4 → T22 → T23 → T5 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T24 → T25 → T15 → T16 → T17 → T18 → T19
+T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → **T4 → T24 → T25** → T22 → T23 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T15 → T16 → T17 → T18 → T19
 
 - T1 ahora es solo el entorno local con Python 3.12; se puede hacer en cualquier momento antes de T3.
-- T7 se fusionó en T20 (CI sin Supabase) y T25 (fuera Render).
+- T7 se fusionó en T20 (CI sin Supabase y fuera Render).
+- **Cambio del 2026-10-26:** como no hay nada desplegado y el deploy se hace desde cero en cuentas de Mery, T24 y T25 pasan a ir justo después de T4. T4 va antes del deploy para no publicar una app que no borra los datos de salud, y T22 (legal) va antes de invitar a usuarias reales.
 
 ---
 
@@ -357,30 +358,55 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T20 ✔ → T4 → T22 → T23 → T
 - **Rama:** `feat/meriyei/s10-evaluacion-prediccion`.
 - **Commit:** `[S10] feat(ml): evaluar métodos de predicción y adoptar el de menor error`.
 
-### T25 — Primer deploy del backend en Vercel
-- **Contexto (2026-10-26):** el backend **no está desplegado en ningún lado**. El servicio de Render nunca existió (los `render.yaml` se borraron en T20). Sin esta tarea, la app en producción no tiene API.
-- **Qué:** desplegar FastAPI como función Python de Vercel (RX-02).
+### T25 — Deploy desde cero en Vercel (frontend + backend)
+- **Contexto (2026-10-26):**
+  - **No hay nada desplegado.** El dev anterior manejaba Render y Vercel en cuentas propias; el servicio de Render nunca existió (los `render.yaml` se borraron en T20).
+  - Desde S10, **todo vive en cuentas de Mery**: GitHub (`mmanosaslva/EVA`), Vercel, Neon, Brevo, Groq y Cloudflare. Ninguna cuenta del equipo anterior es necesaria.
+- **Prerrequisitos (Mery):**
+
+| Servicio | Estado | Qué hace falta |
+|---|---|---|
+| Vercel | Cuenta lista | Nada; los proyectos se crean en esta tarea |
+| Neon | Listo (cuenta de Mery, región `sa-east-1`) | Nada |
+| Groq / Cloudflare | Keys listas (T3) | Rotar la key de Groq expuesta en el chat |
+| Brevo | Cuenta lista | Crear el remitente "EVA" y una API key `eva` (ver abajo) |
+| Sentry | No existe | **Opcional.** Se configura después de T25, si se quiere monitoreo de errores; la app funciona sin `SENTRY_DSN` |
+
+- **Brevo para EVA (antes del deploy):**
+  1. *Senders, Domains & Dedicated IPs → Senders → Add a sender*: nombre `EVA` y un email que Mery pueda confirmar.
+  2. *SMTP & API → API Keys → Generate*: nombre `eva`. Va solo en `backend/.env` y en Vercel.
+  3. Limitación aceptada: sin dominio propio, los correos pueden caer en spam (`CRITERIOS_ISSUES.md`, L-01).
+- **Qué se construye:**
+  - **Backend como función Python de Vercel (RX-02):**
+    - Punto de entrada ASGI para FastAPI.
+    - `vercel.json` con `regions: ["gru1"]`, junto a Neon. Hobby permite una región; si el dashboard no deja elegir `gru1`, se documenta y se mide la alternativa.
+    - Python 3.12 (`backend/.python-version`, T1).
+    - Solo dependencias de runtime en el bundle (las de `requirements-dev.txt` no). El límite es de 500 MB y depende de T24.
   - **Estado entre requests (DP-43):**
-    - Quitar el keepalive de startup (`main.py:63-80`): en serverless no hay tareas en segundo plano.
-    - Reemplazar el rate limit en memoria de slowapi (`core/rate_limiter.py:25`) por un contador en Neon, como mínimo para `/insights` y `/auth/*`.
-    - La caché del catálogo de síntomas (`symptom_service.py:27`) puede quedarse: solo dura lo que la instancia caliente.
+    - Quitar el keepalive de startup (`main.py:63-80`).
+    - Mover el rate limit de slowapi (`core/rate_limiter.py:25`) a un contador en Neon, como mínimo para `/insights` y `/auth/*`. Requiere SQL manual.
+    - La caché del catálogo de síntomas puede quedarse.
   - **Conexiones:** pool mínimo o `NullPool` contra el pooler de Neon (RX-09).
-  - **Región de las funciones:** `gru1` (São Paulo) con `regions` en `vercel.json`. Hobby permite una región; si el dashboard no deja elegir `gru1`, se documenta y se mide la alternativa.
-  - **Python:** fijar 3.12 con `.python-version`.
-  - **Tamaño del bundle:** el límite es de 500 MB sin comprimir y el stack de ML mide ~410 MB (`verificaciones.md` §1). Depende de T24.
-  - **Cron de reentrenamiento:** sale; si T24 necesita un job, va en GitHub Actions (RX-13).
-  - **Mismo origen:** el frontend reescribe `/api/*` hacia el backend, así se elimina el CORS entre dominios. Se decide al implementar: un proyecto o dos.
-  - **Docs:** actualizar `DEPLOY.md`, `DEPLOY_CHECKLIST.md` y `GUIA_ENV.md` para Vercel.
+  - **Frontend:** proyecto Vercel con *root* `frontend/` (Vite), usando el `vercel.json` existente.
+  - **Mismo origen (recomendado):** el frontend reescribe `/api/*` hacia el backend. Así no hay CORS entre dominios y `VITE_API_URL=/api`. Si conviene un proyecto o dos se decide al implementar, y queda en `restructuracion.md` §5.
+  - **Deploys:** automáticos desde GitHub. `main` es producción; cada PR tiene su *preview*. Las previews usan otra base de datos, un *branch* de Neon, nunca la de producción.
+  - **Docs:** reescribir `DEPLOY.md` y `DEPLOY_CHECKLIST.md` para Vercel; actualizar `GUIA_ENV.md`.
+- **Variables de entorno (las carga Mery en Vercel; nunca en el repo, RX-11):**
+
+| Proyecto | Variables |
+|---|---|
+| Backend | `DATABASE_URL` (pooler), `SECRET_KEY` (≥ 32 caracteres), `GROQ_API_KEY`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`, `BREVO_API_KEY`, `SMTP_FROM`, `FRONTEND_URL` (la URL de Vercel), `CORS_ORIGINS`, `ENVIRONMENT=production`. Opcional: `SENTRY_DSN` |
+| Frontend | `VITE_API_URL` (`/api` si se usa el mismo origen). Opcional: `VITE_SENTRY_DSN` |
+
 - **Cierra:** DP-43.
-- **Depende de:** T24.
-- **Manual (Mery):**
-  - Crear el proyecto del backend en Vercel y cargar las variables de entorno (`DATABASE_URL`, `SECRET_KEY`, Groq, Cloudflare, Brevo, `FRONTEND_URL`, `CORS_ORIGINS`).
-  - Apuntar `VITE_API_URL` del frontend a la URL del backend (o a `/api` si queda en el mismo origen).
-  - Actualizar `FRONTEND_URL` para los links de los emails de Brevo.
+- **Depende de:** T4 (no publicar sin borrado total) y T24 (tamaño del bundle).
 - **Hecho cuando:**
-  - Login, registro, chatbot, export y borrado de cuenta funcionan en la URL de Vercel (prueba manual de Mery, anotada en el PR).
+  - En la URL de producción de Vercel funcionan registro (con el email de verificación), login, recuperación de contraseña, ciclos y síntomas, chatbot, export CSV/PDF y borrado de cuenta. Prueba manual de Mery, anotada en el PR con la fecha.
+  - Un PR de prueba genera su *preview* sin tocar la base de producción.
+  - El build de Vercel muestra el tamaño de la función, por debajo de 500 MB.
+  - `DEPLOY.md` permite repetir el deploy desde cero siguiendo solo el documento.
 - **Rama:** `feat/meriyei/s10-deploy-vercel`.
-- **Commit:** `[S10] feat(deploy): primer deploy del backend en Vercel`.
+- **Commit:** `[S10] feat(deploy): deploy desde cero de frontend y backend en Vercel`.
 
 ---
 

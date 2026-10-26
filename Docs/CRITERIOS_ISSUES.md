@@ -1489,6 +1489,20 @@ para identificar problemas de conexión o carga en el servidor de Render.
 
 ---
 
+## Limitaciones aceptadas (S10)
+
+> Registro de restricciones del plan gratuito (`Docs/s10/restricciones.md` RX-01). Cada una se acepta conscientemente; si cambian las condiciones, se revisa.
+
+| ID | Limitación | Motivo | Impacto | Mitigación |
+|---|---|---|---|---|
+| L-01 | Emails de Brevo sin dominio propio (remitente tipo `@gmail.com`) | Un dominio cuesta dinero | Los correos de verificación y recuperación pueden caer en spam (Gmail exige DMARC) | Avisar en la UI que se revise la carpeta de spam; si se consigue un dominio, verificarlo en Brevo |
+| L-02 | Vercel Hobby es solo para uso no comercial | Plan gratuito | EVA no puede monetizarse en este plan | Compatible con un proyecto académico; si EVA se vuelve producto, cambiar de plan |
+| L-03 | Cuotas diarias de los LLM gratuitos (Groq ~1.000/día, Cloudflare ~580/día estimado) | Planes gratuitos | Con mucho uso, el chatbot pasa a la respuesta por reglas | Failover entre los dos proveedores + rate limit por usuaria en `/insights` |
+| L-04 | Neon free: 6 h de historial y 1 snapshot | Plan gratuito | Un error detectado tarde no se puede revertir con el historial | Backup diario cifrado (T23) |
+| L-05 | Una sola región de funciones en Vercel Hobby | Plan gratuito | Sin redundancia geográfica | Región `gru1`, junto a Neon |
+
+---
+
 ## Resumen de criterios por developer
 
 | Developer | Issues con criterios | Total de criterios (checkboxes) |
