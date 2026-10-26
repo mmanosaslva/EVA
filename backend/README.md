@@ -2,7 +2,7 @@
 
 API REST de EVA, plataforma de salud menstrual.
 
-Stack: FastAPI + PostgreSQL (Neon) + Prophet + Ollama
+Stack: FastAPI + PostgreSQL (Neon) + Prophet + LLM cloud (Groq y Cloudflare Workers AI)
 
 ---
 
@@ -38,21 +38,15 @@ Prophet requiere una herramienta de C++ (incluida en las Build Tools de Visual S
 pip install prophet --no-build-isolation
 ```
 
-### Ollama (LLM local)
+### Chatbot (LLM cloud)
 
-1. Descargar e instalar: https://ollama.ai/
-2. Iniciar el servidor:
-   ```bash
-   ollama serve
-   ```
-3. Descargar el modelo Mistral (~4.4 GB):
-   ```bash
-   ollama pull mistral
-   ```
-4. Verificar que responde:
-   ```bash
-   ollama run mistral "Hola, ¿cómo estás?"
-   ```
+El chatbot usa dos proveedores gratuitos con failover automático, en este orden: Groq, luego Cloudflare Workers AI y, si ambos fallan, una respuesta por reglas. Las reglas están en `Docs/s10/restricciones.md` (RX-06).
+
+1. Crear una API key en https://console.groq.com y activar Zero Data Retention (Settings → Data Controls).
+2. Crear en Cloudflare un API token con permiso solo de Workers AI y copiar el Account ID.
+3. Completar en `.env`: `GROQ_API_KEY`, `CLOUDFLARE_ACCOUNT_ID` y `CLOUDFLARE_API_TOKEN`. Los modelos y el orden tienen valores por defecto (ver `.env.example`).
+
+Sin ninguna key el chatbot sigue funcionando, solo con la respuesta por reglas.
 
 ### Verificación del entorno
 
@@ -64,7 +58,6 @@ El script comprueba:
 - Prophet importable y funcional
 - scikit-learn (métrica MAE)
 - joblib (serialización .pkl)
-- Ollama disponible
 - Versiones de todas las dependencias
 
 ---

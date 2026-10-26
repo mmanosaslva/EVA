@@ -15,8 +15,15 @@ Ver `backend/.env.example` para la plantilla completa.
 | `SUPABASE_ANON_KEY` | Clave pública de Supabase | `eyJ...` |
 | `SUPABASE_JWT_SECRET` | Secreto para validar JWT (Auth → Settings → API) | `your-jwt-secret` |
 | `CORS_ORIGINS` | Orígenes permitidos, separados por coma | `http://localhost:5173` |
-| `OLLAMA_BASE_URL` | URL de Ollama local | `http://localhost:11434` |
-| `GROQ_API_KEY` | API key de Groq (fallback LLM, tier gratuito) | `gsk_...` |
+| `LLM_PROVIDERS` | Proveedores de LLM en orden de failover | `groq,cloudflare` |
+| `GROQ_API_KEY` | API key de Groq (proveedor principal, plan gratuito) | `gsk_...` |
+| `GROQ_MODEL` | Modelo de Groq | `openai/gpt-oss-20b` |
+| `CLOUDFLARE_ACCOUNT_ID` | ID de la cuenta de Cloudflare (Workers AI, proveedor secundario) | `0123abcd...` |
+| `CLOUDFLARE_API_TOKEN` | Token de API con permiso solo de Workers AI | `...` |
+| `CLOUDFLARE_AI_MODEL` | Modelo de Workers AI | `@cf/openai/gpt-oss-20b` |
+| `LLM_TIMEOUT_SECONDS` | Timeout por llamada a un proveedor | `20` |
+| `LLM_PROVIDER_COOLDOWN_SECONDS` | Tiempo que se salta un proveedor tras un 429/5xx (si no envía `retry-after`) | `300` |
+| `LLM_MAX_TOKENS` | Máximo de tokens generados (incluye el razonamiento de gpt-oss) | `1024` |
 | `SENTRY_DSN` | DSN de Sentry para monitoreo de errores | `https://...@o....ingest.sentry.io/...` |
 | `ENVIRONMENT` | Entorno de ejecución | `development` / `ci` / `production` |
 

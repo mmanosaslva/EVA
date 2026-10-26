@@ -5,12 +5,15 @@ export interface InsightMessage {
   role: "user" | "eva";
   content: string;
   timestamp: string;
+  /** true cuando la respuesta viene del respaldo por reglas, no de un LLM */
+  isAutomatic?: boolean;
 }
 
 export interface InsightResponse {
   insight: string;
-  source: string;
+  phase: string | null;
   disclaimer: string;
+  is_automatic: boolean;
 }
 
 interface BackendInsightItem {
@@ -18,7 +21,7 @@ interface BackendInsightItem {
   question: string;
   insight: string;
   phase: string | null;
-  source: string;
+  is_automatic: boolean;
   created_at: string;
 }
 
@@ -46,6 +49,7 @@ export async function getInsightsHistory(): Promise<InsightMessage[]> {
         role: "eva",
         content: item.insight,
         timestamp: item.created_at,
+        isAutomatic: item.is_automatic,
       });
     }
 

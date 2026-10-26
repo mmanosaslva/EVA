@@ -25,6 +25,14 @@ export function ChatBubble({ message }: ChatBubbleProps) {
             : "bg-surface-container-low text-text-main rounded-bl-md"
         }`}
       >
+        {message.isAutomatic && (
+          <p
+            className="text-label-md text-on-surface-variant mb-1"
+            title="Nuestro asistente no está disponible ahora; esta orientación se basa en tu fase del ciclo."
+          >
+            Respuesta automática
+          </p>
+        )}
         <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
         <p
           className={`text-label-md mt-1 ${
