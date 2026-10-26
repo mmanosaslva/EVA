@@ -15,6 +15,11 @@ def get_model_path(user_id: str) -> Path:
     return MODELS_DIR / f"user_{user_id}.pkl"
 
 
+def delete_model(user_id: str) -> None:
+    """Borra el modelo entrenado de la usuaria, si existe (parte del borrado total)."""
+    get_model_path(user_id).unlink(missing_ok=True)
+
+
 def _evaluate_model(model, df) -> float:
     from prophet import Prophet
 

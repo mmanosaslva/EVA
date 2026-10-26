@@ -58,3 +58,7 @@ export async function updateDailyLog(
   logsCache.clear();
   return result;
 }
+
+export function invalidateSymptomCaches(): void {
+  logsCache.clear();
+}

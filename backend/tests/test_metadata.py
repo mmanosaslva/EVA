@@ -95,6 +95,17 @@ users_table = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
 )
 
+# Tabla de cuentas de fastapi-users ("user"), separada del perfil "users"
+auth_user_table = Table(
+    "user", test_metadata,
+    Column("id", String(36), primary_key=True),
+    Column("email", String(320), unique=True, nullable=False),
+    Column("hashed_password", String(1024), nullable=False),
+    Column("is_active", Boolean, nullable=False, server_default=text("1")),
+    Column("is_superuser", Boolean, nullable=False, server_default=text("0")),
+    Column("is_verified", Boolean, nullable=False, server_default=text("0")),
+)
+
 ml_models_table = Table(
     "ml_models", test_metadata,
     Column("id", String(36), primary_key=True,

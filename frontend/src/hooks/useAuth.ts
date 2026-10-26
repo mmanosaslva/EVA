@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { authClient, type AuthUser } from "../services/authClient";
+import { clearLocalData } from "../db/clearLocalData";
 
 interface UseAuthReturn {
   user: AuthUser | null;
@@ -67,6 +68,7 @@ export function useAuth(): UseAuthReturn {
 
   const logout = useCallback(async () => {
     await authClient.logout();
+    await clearLocalData();
     setUser(null);
   }, []);
 
@@ -114,6 +116,7 @@ export function useAuth(): UseAuthReturn {
       throw new Error(body.detail ?? "No se pudo eliminar la cuenta");
     }
     await authClient.logout();
+    await clearLocalData();
     setUser(null);
   }, []);
 

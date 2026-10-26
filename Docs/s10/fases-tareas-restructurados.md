@@ -113,6 +113,7 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → **T4 → T24 
 - **Commit:** `[S10] fix(llm): chatbot con Groq y Cloudflare Workers AI con failover y respaldo por reglas`.
 
 ### T4 — Borrado total de cuenta
+- **Estado (2026-10-26):** código HECHO (`account_service`/`account_repo`, limpieza local en el frontend, migración 009 y `Docs/s10/sql/T4-borrado-total.sql`). Falta que Mery ejecute el SQL en Neon con un snapshot previo.
 - **Qué:** `restructuracion.md` §3.2.
 - **Cierra:** DP-13, DP-14, DP-16 (documentación).
 - **Depende de:** T1.
