@@ -198,11 +198,12 @@ Restaurar Playwright con una arquitectura nueva: build de preview apuntando a un
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
 | Groq o Cloudflare cambian su free tier o retiran el modelo | Chatbot | Failover entre los dos + modelos por env + respaldo por reglas |
-| El backend no cabe en una función de Vercel | Deploy | T24 antes que T25; eliminar Prophet si no aporta |
+| El backend no cabe en una función de Vercel (500 MB; hoy ~410 MB solo de ML) | Deploy | T24 antes que T25; eliminar Prophet y su stack si no aporta; si se queda, podar dependencias |
+| Se agota la cuota diaria de los dos proveedores | Chatbot | Respaldo por reglas; rate limit por usuaria en `/insights` (T25) para que una sola cuenta no consuma la cuota |
 | Se pierde la clave privada de `age` | Los backups no se pueden leer | Guardarla en dos lugares offline (p. ej. gestor de contraseñas + papel) |
 | Hay datos huérfanos en Neon por el bug de borrado | Privacidad | Consulta previa (§3.2.3) y decisión de Mery |
 | Conflicto al rescatar el WIP local sobre una base más nueva | Pérdida de trabajo | Tarea T1 dedicada, con stash y verificación |
-| Cold start de las funciones de Vercel | UX | Medirlo en T15; suele ser menor que el sueño de 15 minutos de Render free (NO VERIFICADO) |
+| Cold start de las funciones de Vercel | UX | Medirlo en T15. Una función más liviana, sin Prophet, arranca más rápido |
 | Una sola persona con todo el alcance | Plazo | Las fases priorizan lo crítico (privacidad, chatbot) antes que las mejoras |
 
 ## 5. Decisiones
@@ -215,9 +216,13 @@ Restaurar Playwright con una arquitectura nueva: build de preview apuntando a un
 | Hosting | 100 % Vercel; sale Render (§3.7) |
 | Jobs programados | Solo GitHub Actions (RX-13) |
 | Backups | Diarios, cifrados, en Google Drive + snapshot antes de cada SQL (§3.10) |
-| Región | Se resuelve con la migración: funciones en São Paulo junto a Neon, si el plan lo permite (§3.7) |
+| Región | Funciones de Vercel en `gru1` (São Paulo), junto a Neon. Hobby admite 1 región; falta confirmarlo en el dashboard (T25) y que Mery confirme la región de Neon en su consola (§3.7, `verificaciones.md` §5) |
+| Modelo LLM | `openai/gpt-oss-20b` en los dos proveedores (`GROQ_MODEL`, `CLOUDFLARE_AI_MODEL=@cf/openai/gpt-oss-20b`), para que el estilo no cambie en el failover (§3.1) |
+| Privacidad de los proveedores LLM | Verificado: ninguno entrena con los datos. Groq con Zero Data Retention activado; Cloudflare sin AI Gateway con logging; ningún modelo Beta (RX-06, `verificaciones.md` §2-§3) |
+| Python | 3.12 en local, CI y Vercel (Vercel no soporta 3.11), fijado con `.python-version` (RX-12, T1) |
+| Capacidad del chatbot | ~1.000 respuestas/día por Groq + ~580 por Cloudflare antes de caer en el respaldo por reglas (estimado, §3.1) |
 | Marco legal | Colombia, Ley 1581 de 2012 (§3.9) |
-| Modelos ML | Se decide con la evaluación de T24 (§3.8) |
+| Modelos ML | Se decide con la evaluación de T24 (§3.8). Si Prophet no aporta, sale junto con su stack (~410 MB), lo que deja el backend con holgura bajo los 500 MB de Vercel |
 
 ### Pendientes
 

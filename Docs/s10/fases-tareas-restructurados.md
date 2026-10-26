@@ -22,9 +22,9 @@
 
 **Orden de ejecución (2026-10-26):**
 
-T0 ✔ → T2 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T24 → T25 → T15 → T16 → T17 → T18 → T19
+T0 ✔ → T2 → T1 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T24 → T25 → T15 → T16 → T17 → T18 → T19
 
-- T1 queda reducida a recrear el venv; se hace cuando haya Python 3.12 instalado.
+- T1 ahora es solo el entorno local con Python 3.12; se puede hacer en cualquier momento antes de T3.
 - T7 se fusionó en T20 (CI sin Supabase) y T25 (fuera Render).
 
 ---
@@ -39,25 +39,25 @@ T0 ✔ → T2 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 
 - **Excepción a RG-06:** al abrir el PR la base tenía 10 tests rojos; se arreglaron en el mismo PR (`b4bfc4d`).
 - **Rama:** — (PR directo).
 
-### T1 — Rescatar el WIP local
-- **Estado (2026-10-26):** casi vacía.
+### T1 — Entorno local con Python 3.12
+- **Historia:** antes era "Rescatar el WIP local". Al 2026-10-26 ese trabajo ya está resuelto:
   - El WIP está respaldado en `/home/mery/projects/EVA-respaldo-2026-10-25/` y el repo local se limpió.
-  - `requests` y `test_security.py` entraron en `b4bfc4d`.
-  - `rate_limiter.py` ya estaba en `develop`.
+  - `requests` y `test_security.py` entraron en `b4bfc4d`; `rate_limiter.py` ya estaba en `develop`.
   - `auth/db.py` y `conftest.py` quedaron obsoletos.
-  - `useAuth.ts` y `VerifyEmailPage.tsx` (no llamar a `setState` dentro de `useEffect`) pasan a T13.
-  - Queda **solo** recrear el venv con Python 3.11, que no está instalado en el sistema.
-- **Qué:** pasar los 7 archivos sin commit de `feature/auth_gateway` a una rama nueva desde `develop`, y recrear el venv con Python 3.11.
-- **Cierra:** DP-03, DP-17.
-- **Pasos:**
-  1. `git stash push -m "wip-auth-tests"` (sin `-u`: los 7 archivos ya están versionados, y así `Docs/s10/`, que no está versionado, se queda en el árbol para T2).
-  2. `git switch -c fix/meriyei/s10-rescate-wip-auth origin/develop`.
-  3. `git stash apply` (no `pop`, para no perder el stash).
-  4. Resolver el conflicto esperado en `backend/app/auth/db.py`: develop ya cambió el engine.
-  5. Recrear el venv: `python3.11 -m venv venv && pip install -r requirements.txt`.
-  6. Solo cuando el commit está hecho: `git stash drop`.
-- **Hecho cuando:** `git diff origin/develop --stat` muestra solo esos archivos; `requests` está en `requirements.txt`; `python --version` = 3.11.x; pytest corre (puede seguir con fallos de DP-10).
-- **Commit:** `[S10] fix(auth): rescatar ajustes de tests y rate limiter sobre develop`.
+  - `useAuth.ts` y `VerifyEmailPage.tsx` pasan a T13.
+- **Qué:** instalar Python **3.12**, la versión de Vercel y del CI (RX-12; Vercel no soporta 3.11), y recrear el venv del backend.
+- **Cierra:** DP-03 (hecho en `b4bfc4d`), DP-17.
+- **Depende de:** —
+- **Pasos (Mery):**
+  1. Instalar `uv` (con el gestor de paquetes del sistema o con el instalador oficial de astral.sh).
+  2. `cd backend && uv python install 3.12`.
+  3. `mv venv venv-314-viejo && uv venv -p 3.12 venv`.
+  4. `uv pip install -p venv -r requirements.txt -r requirements-dev.txt`.
+  5. Agregar `backend/.python-version` con `3.12`, que Vercel también lee.
+  6. Verificar y luego borrar `venv-314-viejo`.
+- **Hecho cuando:** `venv/bin/python --version` = 3.12.x; `pytest -q` = 203 pasan sin `.env` cargado (RX-10); `ruff check backend/app/` OK.
+- **Rama:** `chore/meriyei/s10-python-312` (solo para `.python-version`).
+- **Commit:** `[S10] chore: fijar Python 3.12 para backend local, CI y Vercel`.
 
 ### T2 — Publicar las reglas de S10
 - **Qué:** commitear `Docs/s10/` (los 7 documentos) y marcar `Docs/contextoopencode.md` y `eva_contexto` como HISTÓRICO (RG-15).
@@ -224,7 +224,7 @@ T0 ✔ → T2 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 
 ### T15 — Instrumentación temporal y medición
 - **Qué:** `restructuracion.md` §3.5. Va detrás de `EVA_PERF_INSTRUMENTATION=1` y se marca `# TEMP-INSTRUMENTATION` (RG-14).
 - **Depende de:** T11, T25 (se mide sobre Vercel, que es donde quedará el backend).
-- **Hecho cuando:** existe `Docs/s10/mediciones.md` con: latencia de `SELECT 1`, `/health` en frío y en caliente, y los 5 endpoints principales (p50 y p95 en ms, y número de queries), con fecha y método.
+- **Hecho cuando:** existe `Docs/s10/mediciones.md` con: latencia de `SELECT 1` (función en `gru1` → Neon), cold start de la función, y los 5 endpoints principales (p50 y p95 en ms, y número de queries), con fecha y método.
 - **Rama:** `perf/meriyei/s10-instrumentacion`.
 - **Commit:** `[S10] perf: instrumentación temporal de queries y tiempos por request`.
 
@@ -347,8 +347,8 @@ T0 ✔ → T2 → T3 → T20 → T4 → T22 → T23 → T5 → T6 → T8 → T9 
     5. Prophet.
   - **Escenarios:** usuaria regular, irregular, con pocos ciclos (1–3) y con un ciclo atípico.
 - **Regla de decisión:**
-  - Si Prophet no supera al mejor método simple por **al menos 0,5 días de MAE** en el escenario irregular, se elimina, junto con `prophet`, `cmdstanpy` y el cron. Es requisito para que el backend quepa en una función de Vercel (T25).
-  - Si lo supera, se define cómo persistir el modelo sin disco (columna en `ml_models`, SQL manual) y cómo reentrenar sin cron (al registrar un ciclo nuevo).
+  - Si Prophet no supera al mejor método simple por **al menos 0,5 días de MAE** en el escenario irregular, se elimina, junto con `prophet`, `cmdstanpy`, `matplotlib`, `scipy`, `scikit-learn` y el cron, si nada más los usa. Hoy el stack de ML mide ~410 MB de los 500 MB que admite una función de Vercel (`verificaciones.md` §1): sin él, el backend cabe con holgura.
+  - Si lo supera, se define cómo persistir el modelo sin disco (columna en `ml_models`, SQL manual), cómo reentrenar sin cron (al registrar un ciclo nuevo), y se poda todo lo que Prophet no necesite para quedar por debajo de 500 MB, verificándolo en el build de Vercel.
 - **Cierra:** DP-15, DP-40 (la parte del cron).
 - **Depende de:** T5.
 - **Hecho cuando:** `Docs/s10/evaluacion-prediccion.md` tiene la tabla de resultados, la decisión y el código de evaluación reproducible en `backend/scripts/`; el método elegido queda implementado y con tests.
