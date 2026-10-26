@@ -1,101 +1,53 @@
-from datetime import date, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+import json
 
+import httpx
 import pytest
-from sqlalchemy import insert
 
-from app.services.llm_service import (
-    SYSTEM_PROMPT,
-    build_cycle_context,
-    build_context_prompt,
-    get_insight,
-    _call_ollama,
-    _call_groq,
-)
-from tests.conftest import SEED_SYMPTOMS, TEST_USER_ID
-from tests.test_metadata import (
-    cycles_table as test_cycles,
-    daily_logs_table as test_logs,
-    daily_symptoms_table as test_daily_symptoms,
-    symptoms_catalog_table as test_catalog,
-)
+from app.services import llm_service
+from app.services.llm_service import SYSTEM_PROMPT, ProviderError, build_context_prompt, generate
 
-CYCLE_1_ID = "c0000000-e29b-41d4-a716-446655440001"
-CYCLE_2_ID = "c0000000-e29b-41d4-a716-446655440002"
-CYCLE_3_ID = "c0000000-e29b-41d4-a716-446655440003"
-LOG_1_ID = "c0000000-e29b-41d4-a716-446655440010"
+PROMPT = "Contexto del ciclo actual: fase lutea. Pregunta: ¿por que estoy cansada?"
 
 
-@pytest.fixture
-async def seeded_cycles(sqlite_engine):
-    async with sqlite_engine.begin() as conn:
-        await conn.execute(insert(test_catalog).values(SEED_SYMPTOMS))
-        await conn.execute(
-            insert(test_cycles).values(
-                id=CYCLE_1_ID,
-                user_id=TEST_USER_ID,
-                start_date=date(2025, 5, 1),
-                end_date=date(2025, 5, 5),
-            )
-        )
-        await conn.execute(
-            insert(test_cycles).values(
-                id=CYCLE_2_ID,
-                user_id=TEST_USER_ID,
-                start_date=date(2025, 5, 29),
-                end_date=date(2025, 6, 2),
-            )
-        )
-        await conn.execute(
-            insert(test_cycles).values(
-                id=CYCLE_3_ID,
-                user_id=TEST_USER_ID,
-                start_date=date(2025, 6, 26),
-                end_date=date(2025, 6, 30),
-            )
-        )
-        await conn.execute(
-            insert(test_logs).values(
-                id=LOG_1_ID,
-                cycle_id=CYCLE_1_ID,
-                date=date(2025, 5, 1),
-                flow_level="medium",
-            )
-        )
-        await conn.execute(
-            insert(test_daily_symptoms).values(
-                log_id=LOG_1_ID,
-                symptom_id=1,
-                intensity=3,
-            )
-        )
+@pytest.fixture(autouse=True)
+def llm_settings(monkeypatch):
+    """Los dos proveedores configurados con credenciales falsas; nunca hay red real (RX-10)."""
+    s = llm_service.settings
+    monkeypatch.setattr(s, "LLM_PROVIDERS", "groq,cloudflare")
+    monkeypatch.setattr(s, "GROQ_API_KEY", "test-groq-key")
+    monkeypatch.setattr(s, "GROQ_MODEL", "openai/gpt-oss-20b")
+    monkeypatch.setattr(s, "CLOUDFLARE_ACCOUNT_ID", "test-account")
+    monkeypatch.setattr(s, "CLOUDFLARE_API_TOKEN", "test-cf-token")
+    monkeypatch.setattr(s, "CLOUDFLARE_AI_MODEL", "@cf/openai/gpt-oss-20b")
+    monkeypatch.setattr(s, "LLM_PROVIDER_COOLDOWN_SECONDS", 300)
+    llm_service._cooldown_until.clear()
+    yield s
+    llm_service._cooldown_until.clear()
 
 
-class TestBuildCycleContext:
-    async def test_no_cycles_returns_defaults(self):
-        ctx = await build_cycle_context(TEST_USER_ID)
-        assert ctx["fase_actual"] is None
-        assert ctx["sintomas_frecuentes"] == []
-        assert ctx["duracion_promedio"] == 28
+def _mock_http(monkeypatch, handler):
+    """Hace que httpx.AsyncClient use un transporte falso con `handler(request)`."""
+    calls: list[httpx.Request] = []
+    real_client = httpx.AsyncClient
 
-    async def test_returns_phase_and_symptoms(self, seeded_cycles):
-        ctx = await build_cycle_context(TEST_USER_ID, context_cycles=3)
-        assert ctx["fase_actual"] is not None
-        assert ctx["duracion_promedio"] == 28.0
-        assert ctx["sintomas_frecuentes"] != []
-        assert isinstance(ctx["sintomas_frecuentes"], list)
-        assert ctx["intensidad_actual"] is not None
+    def recording(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return handler(request)
 
-    async def test_frequent_symptoms_from_db(self, seeded_cycles):
-        ctx = await build_cycle_context(TEST_USER_ID, context_cycles=3)
-        symptoms = ctx["sintomas_frecuentes"]
-        assert any("Dolor" in s for s in symptoms)
+    def factory(*args, **kwargs):
+        kwargs["transport"] = httpx.MockTransport(recording)
+        return real_client(*args, **kwargs)
 
-    async def test_no_pii_in_context(self, seeded_cycles):
-        ctx = await build_cycle_context(TEST_USER_ID, context_cycles=3)
-        ctx_str = str(ctx)
-        assert TEST_USER_ID not in ctx_str
-        assert "@" not in ctx_str
+    monkeypatch.setattr(llm_service.httpx, "AsyncClient", factory)
+    return calls
+
+
+def _openai_ok(text: str) -> httpx.Response:
+    return httpx.Response(200, json={"choices": [{"message": {"role": "assistant", "content": text}}]})
+
+
+def _is_groq(request: httpx.Request) -> bool:
+    return request.url.host == "api.groq.com"
 
 
 class TestBuildContextPrompt:
@@ -184,195 +136,137 @@ class TestSystemPromptInSpanish:
         assert "folicular" in prompt
 
 
-class TestCoherentResponses:
-    """Criterio #43-5: Respuestas coherentes con los datos del ciclo."""
+class TestGenerateFailover:
+    async def test_groq_ok_does_not_call_cloudflare(self, monkeypatch):
+        calls = _mock_http(monkeypatch, lambda r: _openai_ok("respuesta groq"))
+        result = await generate(PROMPT)
+        assert result.text == "respuesta groq"
+        assert result.provider == "groq"
+        assert len(calls) == 1 and _is_groq(calls[0])
 
-    def test_prompt_includes_real_cycle_data(self):
-        ctx = {
-            "fase_actual": "ovulacion",
-            "dia_del_ciclo": 14,
-            "duracion_promedio": 32,
-            "sintomas_frecuentes": ["dolor abdominal", "fatiga"],
-            "intensidad_actual": "4.0",
-            "dias_hasta_siguiente": 16,
-        }
-        prompt = build_context_prompt(ctx, "test")
-        assert "ovulacion" in prompt
-        assert "14" in prompt
-        assert "32" in prompt
-        assert "dolor abdominal" in prompt
-        assert "fatiga" in prompt
-        assert "4.0" in prompt
-        assert "16" in prompt
+    @pytest.mark.parametrize("status", [429, 500, 503, 400, 404])
+    async def test_groq_error_falls_back_to_cloudflare(self, monkeypatch, status):
+        def handler(r):
+            if _is_groq(r):
+                return httpx.Response(status, json={"error": {"code": "model_decommissioned"}})
+            return _openai_ok("respuesta cloudflare")
 
-    def test_prompt_with_no_symptoms_uses_fallback(self):
-        ctx = {
-            "fase_actual": "menstruacion",
-            "dia_del_ciclo": 2,
-            "duracion_promedio": 28,
-            "sintomas_frecuentes": [],
-            "intensidad_actual": None,
-            "dias_hasta_siguiente": 24,
-        }
-        prompt = build_context_prompt(ctx, "test")
-        assert "menstruacion" in prompt
-        assert "ninguno registrado" in prompt
+        calls = _mock_http(monkeypatch, handler)
+        result = await generate(PROMPT)
+        assert result.provider == "cloudflare"
+        assert result.text == "respuesta cloudflare"
+        assert [c.url.host for c in calls] == ["api.groq.com", "api.cloudflare.com"]
 
-    def test_system_prompt_mentions_cycle_data(self):
-        assert "datos del ciclo" in SYSTEM_PROMPT or "datos" in SYSTEM_PROMPT
+    async def test_groq_timeout_falls_back_to_cloudflare(self, monkeypatch):
+        def handler(r):
+            if _is_groq(r):
+                raise httpx.ReadTimeout("timeout", request=r)
+            return _openai_ok("respuesta cloudflare")
 
-    async def test_ollama_response_includes_context(self):
-        """Cuando el LLM responde, el prompt incluye datos reales del ciclo,
-        no placeholders genéricos."""
-        ctx = {
-            "fase_actual": "lutea",
-            "dia_del_ciclo": 22,
-            "duracion_promedio": 31,
-            "sintomas_frecuentes": ["fatiga", "irritabilidad"],
-            "intensidad_actual": "2.5",
-            "dias_hasta_siguiente": 5,
-        }
-        prompt = build_context_prompt(ctx, "¿Por qué estoy cansada?")
-        assert "31" in prompt
-        assert "22" in prompt
-        assert "fatiga" in prompt
-        assert prompt.count("?") >= 1
+        _mock_http(monkeypatch, handler)
+        result = await generate(PROMPT)
+        assert result.provider == "cloudflare"
 
-    async def test_llm_called_with_real_context_not_hardcoded(self, seeded_cycles):
-        """Verifica que build_cycle_context retorna datos reales de BD,
-        no valores hardcodeados."""
-        ctx = await build_cycle_context(TEST_USER_ID, context_cycles=3)
-        assert ctx["fase_actual"] is not None
-        assert ctx["duracion_promedio"] != 0
-        assert ctx["dia_del_ciclo"] is not None or ctx["dia_del_ciclo"] is None
+    async def test_groq_empty_content_falls_back(self, monkeypatch):
+        def handler(r):
+            if _is_groq(r):
+                return httpx.Response(200, json={"choices": [{"message": {"content": ""}}]})
+            return _openai_ok("respuesta cloudflare")
 
+        _mock_http(monkeypatch, handler)
+        assert (await generate(PROMPT)).provider == "cloudflare"
 
-class TestResponseTime:
-    """Criterio #43-7: Tiempo de respuesta < 8 segundos con Ollama local."""
+    async def test_groq_in_cooldown_is_skipped(self, monkeypatch):
+        def handler(r):
+            if _is_groq(r):
+                return httpx.Response(429, headers={"retry-after": "60"})
+            return _openai_ok("respuesta cloudflare")
 
-    def test_ollama_has_timeout_configured(self):
-        """Verifica que _call_ollama usa un timeout razonable."""
-        import inspect
-        source = inspect.getsource(_call_ollama)
-        assert "timeout" in source
+        calls = _mock_http(monkeypatch, handler)
+        await generate(PROMPT)
+        calls.clear()
+        result = await generate(PROMPT)
+        assert result.provider == "cloudflare"
+        assert [c.url.host for c in calls] == ["api.cloudflare.com"]
 
-    @patch("app.services.llm_service.httpx.AsyncClient")
-    async def test_ollama_timeout_set_to_30_seconds(self, mock_client):
-        """El timeout de Ollama debe ser ≤ 30s."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"response": "ok"}
-        mock_instance = AsyncMock()
-        mock_instance.post = AsyncMock(return_value=mock_response)
-        mock_client.return_value.__aenter__.return_value = mock_instance
-        result = await _call_ollama("test prompt")
-        assert result == "ok"
+    async def test_cooldown_uses_retry_after(self, monkeypatch):
+        monkeypatch.setattr(llm_service.time, "monotonic", lambda: 1000.0)
+        _mock_http(monkeypatch, lambda r: httpx.Response(429, headers={"retry-after": "60"}) if _is_groq(r) else _openai_ok("ok"))
+        await generate(PROMPT)
+        assert llm_service._cooldown_until["groq"] == 1060.0
 
-    @patch("app.services.llm_service.httpx.AsyncClient")
-    async def test_groq_called_when_ollama_fails(self, mock_client):
-        """Si Ollama falla, intenta Groq."""
-        mock_instance = AsyncMock()
-        mock_client.return_value.__aenter__.return_value = mock_instance
-        mock_instance.post.side_effect = Exception("Ollama down")
-        result = await _call_groq("test prompt")
-        assert result is None
+    async def test_without_groq_key_uses_cloudflare(self, monkeypatch, llm_settings):
+        monkeypatch.setattr(llm_settings, "GROQ_API_KEY", "")
+        calls = _mock_http(monkeypatch, lambda r: _openai_ok("respuesta cloudflare"))
+        result = await generate(PROMPT)
+        assert result.provider == "cloudflare"
+        assert all(not _is_groq(c) for c in calls)
 
-    @patch("app.services.llm_service._call_ollama")
-    @patch("app.services.llm_service._call_groq")
-    async def test_fallback_chain(self, mock_groq, mock_ollama):
-        """get_insight intenta Ollama primero, luego Groq."""
-        mock_ollama.return_value = "respuesta ollama"
-        result = await get_insight("test", {"fase_actual": "lutea"})
-        assert result["source"].startswith("ollama")
-        mock_groq.assert_not_called()
+    async def test_without_cloudflare_credentials_only_groq(self, monkeypatch, llm_settings):
+        monkeypatch.setattr(llm_settings, "CLOUDFLARE_API_TOKEN", "")
+        calls = _mock_http(monkeypatch, lambda r: httpx.Response(503))
+        assert await generate(PROMPT) is None
+        assert [c.url.host for c in calls] == ["api.groq.com"]
 
-    @patch("app.services.llm_service._call_ollama")
-    @patch("app.services.llm_service._call_groq")
-    async def test_groq_fallback_when_ollama_fails(self, mock_groq, mock_ollama):
-        mock_ollama.return_value = None
-        mock_groq.return_value = "respuesta groq"
-        result = await get_insight("test", {"fase_actual": "lutea"})
-        assert result["source"].startswith("groq")
+    async def test_both_fail_returns_none(self, monkeypatch):
+        _mock_http(monkeypatch, lambda r: httpx.Response(503))
+        assert await generate(PROMPT) is None
 
-    @patch("app.services.llm_service._call_ollama")
-    @patch("app.services.llm_service._call_groq")
-    async def test_runtime_error_when_both_fail(self, mock_groq, mock_ollama):
-        mock_ollama.return_value = None
-        mock_groq.return_value = None
-        with pytest.raises(RuntimeError, match="LLM service unavailable"):
-            await get_insight("test", {"fase_actual": "lutea"})
+    async def test_provider_order_follows_setting(self, monkeypatch, llm_settings):
+        monkeypatch.setattr(llm_settings, "LLM_PROVIDERS", "cloudflare,groq")
+        calls = _mock_http(monkeypatch, lambda r: _openai_ok("ok"))
+        result = await generate(PROMPT)
+        assert result.provider == "cloudflare"
+        assert len(calls) == 1
 
-    def test_disclaimer_included_in_response(self):
-        """Toda respuesta incluye el disclaimer médico."""
-        import inspect
-        source = inspect.getsource(get_insight)
-        assert "reemplaza" in source or "EVA no reemplaza" in source
+    async def test_cloudflare_native_format_is_accepted(self, monkeypatch, llm_settings):
+        monkeypatch.setattr(llm_settings, "LLM_PROVIDERS", "cloudflare")
+        _mock_http(monkeypatch, lambda r: httpx.Response(200, json={"result": {"response": "nativo"}, "success": True}))
+        assert (await generate(PROMPT)).text == "nativo"
 
 
-class TestGroqFallback:
-    """Tests explícitos del fallback Groq según GROQ_API_KEY."""
+class TestRequests:
+    async def test_same_prompt_sent_to_both_providers(self, monkeypatch):
+        def handler(r):
+            return httpx.Response(503) if _is_groq(r) else _openai_ok("ok")
 
-    @patch("app.services.llm_service.settings")
-    async def test_groq_skipped_when_key_empty(self, mock_settings):
-        mock_settings.GROQ_API_KEY = ""
-        result = await _call_groq("test prompt")
-        assert result is None
+        calls = _mock_http(monkeypatch, handler)
+        await generate(PROMPT)
+        bodies = [json.loads(c.content) for c in calls]
+        assert bodies[0]["messages"] == bodies[1]["messages"]
+        assert bodies[0]["messages"][0] == {"role": "system", "content": SYSTEM_PROMPT}
+        assert bodies[0]["messages"][1]["content"] == PROMPT
 
-    @patch("app.services.llm_service.settings")
-    async def test_groq_skipped_when_key_none(self, mock_settings):
-        mock_settings.GROQ_API_KEY = None
-        result = await _call_groq("test prompt")
-        assert result is None
+    async def test_request_details(self, monkeypatch):
+        def handler(r):
+            return httpx.Response(503) if _is_groq(r) else _openai_ok("ok")
 
-    @patch("app.services.llm_service.httpx.AsyncClient")
-    @patch("app.services.llm_service.settings")
-    async def test_groq_called_when_key_exists(self, mock_settings, mock_client):
-        mock_settings.GROQ_API_KEY = "gsk_test_key_123"
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.raise_for_status = MagicMock()
-        mock_response.json.return_value = {
-            "choices": [{"message": {"content": "respuesta groq"}}]
-        }
-        mock_instance = AsyncMock()
-        mock_instance.post = AsyncMock(return_value=mock_response)
-        mock_client.return_value.__aenter__.return_value = mock_instance
-        result = await _call_groq("test prompt")
-        assert result == "respuesta groq"
-        mock_instance.post.assert_called_once()
+        calls = _mock_http(monkeypatch, handler)
+        await generate(PROMPT)
+        groq, cf = calls
+        assert groq.headers["authorization"] == "Bearer test-groq-key"
+        groq_body = json.loads(groq.content)
+        assert groq_body["model"] == "openai/gpt-oss-20b"
+        assert groq_body["reasoning_effort"] == "low"
+        assert groq_body["include_reasoning"] is False
+        assert str(cf.url) == "https://api.cloudflare.com/client/v4/accounts/test-account/ai/v1/chat/completions"
+        assert cf.headers["authorization"] == "Bearer test-cf-token"
+        assert json.loads(cf.content)["model"] == "@cf/openai/gpt-oss-20b"
 
-    @patch("app.services.llm_service._call_ollama")
-    @patch("app.services.llm_service._call_groq")
-    async def test_groq_called_when_ollama_fails_and_key_exists(self, mock_groq, mock_ollama):
-        mock_ollama.return_value = None
-        mock_groq.return_value = "respuesta groq"
-        result = await get_insight("test", {"fase_actual": "lutea"})
-        assert result["source"].startswith("groq")
-        mock_groq.assert_called_once()
+    async def test_unknown_provider_is_ignored(self, monkeypatch, llm_settings):
+        monkeypatch.setattr(llm_settings, "LLM_PROVIDERS", "desconocido,groq")
+        calls = _mock_http(monkeypatch, lambda r: _openai_ok("ok"))
+        result = await generate(PROMPT)
+        assert result.provider == "groq"
+        assert len(calls) == 1
 
-    @patch("app.services.llm_service._call_ollama")
-    @patch("app.services.llm_service._call_groq")
-    async def test_runtime_error_when_ollama_fails_and_no_groq_key(self, mock_groq, mock_ollama):
-        mock_ollama.return_value = None
-        mock_groq.return_value = None
-        with pytest.raises(RuntimeError, match="LLM service unavailable"):
-            await get_insight("test", {"fase_actual": "lutea"})
+    async def test_failure_log_has_no_prompt(self, monkeypatch, caplog):
+        _mock_http(monkeypatch, lambda r: httpx.Response(503))
+        with caplog.at_level("WARNING"):
+            await generate(PROMPT)
+        assert caplog.records
+        assert all(PROMPT not in rec.getMessage() and "cansada" not in rec.getMessage() for rec in caplog.records)
 
-
-class TestBuildCycleContextComplete:
-    """Verifica que todos los campos requeridos están presentes."""
-
-    async def test_context_contains_all_required_fields(self):
-        ctx = await build_cycle_context(TEST_USER_ID)
-        required = [
-            "fase_actual", "dia_del_ciclo", "duracion_promedio",
-            "sintomas_frecuentes", "intensidad_actual", "dias_hasta_siguiente",
-        ]
-        for field in required:
-            assert field in ctx, f"Campo requerido '{field}' no está en el contexto"
-
-    async def test_context_contains_no_pii(self):
-        ctx = await build_cycle_context(TEST_USER_ID)
-        ctx_str = str(ctx)
-        assert "@" not in ctx_str
-        assert "email" not in ctx_str.lower()
+    def test_provider_error_defaults(self):
+        err = ProviderError("timeout")
+        assert err.cooldown is False and err.retry_after is None

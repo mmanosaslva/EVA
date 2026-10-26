@@ -2,7 +2,6 @@
 
 import importlib
 import sys
-import subprocess
 from pathlib import Path
 
 
@@ -82,27 +81,6 @@ def check_joblib() -> bool:
         return False
 
 
-def check_ollama() -> bool:
-    try:
-        result = subprocess.run(
-            ["ollama", "list"],
-            capture_output=True, text=True, timeout=15
-        )
-        if result.returncode == 0:
-            models = [l.split()[0] for l in result.stdout.strip().split("\n")[1:] if l.strip()]
-            print(f"  [OK] Ollama disponible. Modelos: {models}")
-            return True
-        else:
-            print(f"  [WARN] Ollama no responde — {result.stderr.strip()}")
-            return False
-    except FileNotFoundError:
-        print("  [WARN] Ollama no encontrado en PATH")
-        return False
-    except subprocess.TimeoutExpired:
-        print("  [WARN] Ollama no responde (timeout)")
-        return False
-
-
 def main():
     print("=" * 50)
     print("  EVA — Verificación del Entorno ML")
@@ -128,9 +106,6 @@ def main():
     print("\n--- Dependencias recomendadas ---")
     for mod, pip_name in RECOMMENDED_PACKAGES.items():
         check_import(mod, pip_name)
-
-    print("\n--- Ollama ---")
-    check_ollama()
 
     print("\n" + "=" * 50)
     failed = [k for k, v in results.items() if not v]

@@ -1,29 +1,63 @@
-from datetime import date, timedelta
+"""Llamadas a los proveedores de LLM (Groq y Cloudflare Workers AI) con failover.
+
+Este módulo solo habla HTTP con los proveedores. No accede a la BD:
+el contexto del ciclo, el respaldo por reglas y el guardado viven en
+insight_service.py (Docs/s10/reglas.md RG-07, restricciones.md RX-06).
+"""
+
+import logging
+import time
+from dataclasses import dataclass
 from typing import Optional
 
 import httpx
 
 from app.core.config import settings
-from app.repositories import analytics_repo, cycle_repo, daily_log_repo, symptom_repo
-from app.utils.cycle_utils import calculate_current_phase
 
-OLLAMA_BASE_URL = settings.OLLAMA_BASE_URL
-OLLAMA_MODEL = "mistral"
+logger = logging.getLogger(__name__)
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama3-8b-8192"
+CLOUDFLARE_API_URL = "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1/chat/completions"
+
+TEMPERATURE = 0.5
 
 SYSTEM_PROMPT = """
 Eres EVA, una asistente de salud menstrual. Respondes en espanol, con tono calido,
-empatico y basado en evidencia cientifica. Tus respuestas son concisas (maximo 4 oraciones)
-y siempre incluyen el disclaimer de que no reemplazas al medico.
+empatico y basado en evidencia cientifica.
 
-Principios:
-- Solo hablas de salud menstrual y temas relacionados
-- Nunca haces diagnosticos medicos
-- Si la usuaria menciona sintomas graves, la remites a su ginecologa
-- Usas los datos del ciclo proporcionados para personalizar la respuesta
+Reglas de formato:
+- Maximo 4 oraciones por respuesta.
+- Siempre incluye: "EVA no reemplaza el consejo medico profesional."
+- Usa los datos del ciclo proporcionados para personalizar la respuesta.
+- Si te preguntan por algo no relacionado con salud menstrual, redirige amablemente.
+
+Limites:
+- Nunca hagas diagnosticos medicos.
+- Si la usuaria menciona sintomas graves (dolor intenso, sangrado abundante,
+  fiebre, etc.), recomienda consultar a un ginecologo.
+- No inventes datos medicos. Si no sabes, di que no tienes suficiente informacion.
 """
+
+
+@dataclass
+class LlmResult:
+    text: str
+    provider: str
+
+
+class ProviderError(Exception):
+    """Fallo de un proveedor. `cooldown` indica si hay que dejarlo descansar."""
+
+    def __init__(self, reason: str, cooldown: bool = False, retry_after: Optional[float] = None):
+        super().__init__(reason)
+        self.reason = reason
+        self.cooldown = cooldown
+        self.retry_after = retry_after
+
+
+# Proveedor -> instante (time.monotonic) hasta el que no se intenta.
+# En serverless vive solo mientras la instancia esté caliente; es suficiente.
+_cooldown_until: dict[str, float] = {}
 
 
 def build_context_prompt(cycle_context: dict, question: str) -> str:
@@ -41,133 +75,129 @@ Pregunta: {question}
 """
 
 
-async def _call_ollama(prompt: str) -> Optional[str]:
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={
-                    "model": OLLAMA_MODEL,
-                    "prompt": f"{SYSTEM_PROMPT}\n\n{prompt}",
-                    "stream": False,
-                    "options": {"temperature": 0.7, "num_predict": 300},
-                },
-            )
-            response.raise_for_status()
-            return response.json()["response"].strip()
-    except Exception:
-        return None
+def _messages(prompt: str) -> list[dict]:
+    return [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": prompt},
+    ]
 
 
-async def _call_groq(prompt: str) -> Optional[str]:
+def _groq_request(prompt: str) -> Optional[tuple[str, dict, dict]]:
     if not settings.GROQ_API_KEY:
         return None
+    body = {
+        "model": settings.GROQ_MODEL,
+        "messages": _messages(prompt),
+        "temperature": TEMPERATURE,
+        "max_completion_tokens": settings.LLM_MAX_TOKENS,
+        # gpt-oss razona antes de responder: esfuerzo bajo y sin devolver el razonamiento
+        "reasoning_effort": "low",
+        "include_reasoning": False,
+    }
+    headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
+    return GROQ_API_URL, headers, body
 
+
+def _cloudflare_request(prompt: str) -> Optional[tuple[str, dict, dict]]:
+    if not (settings.CLOUDFLARE_ACCOUNT_ID and settings.CLOUDFLARE_API_TOKEN):
+        return None
+    body = {
+        "model": settings.CLOUDFLARE_AI_MODEL,
+        "messages": _messages(prompt),
+        "temperature": TEMPERATURE,
+        "max_tokens": settings.LLM_MAX_TOKENS,
+    }
+    headers = {"Authorization": f"Bearer {settings.CLOUDFLARE_API_TOKEN}"}
+    url = CLOUDFLARE_API_URL.format(account_id=settings.CLOUDFLARE_ACCOUNT_ID)
+    return url, headers, body
+
+
+_PROVIDERS = {
+    "groq": _groq_request,
+    "cloudflare": _cloudflare_request,
+}
+
+
+def _extract_text(data: dict) -> str:
+    # Formato OpenAI (Groq y el endpoint compatible de Cloudflare)
+    choices = data.get("choices") or []
+    if choices:
+        content = (choices[0].get("message") or {}).get("content")
+        if content:
+            return content.strip()
+    # Formato nativo de Workers AI, por si el endpoint compatible responde así
+    result = data.get("result")
+    if isinstance(result, dict) and isinstance(result.get("response"), str):
+        return result["response"].strip()
+    return ""
+
+
+def _parse_retry_after(response: httpx.Response) -> Optional[float]:
+    value = response.headers.get("retry-after")
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                GROQ_API_URL,
-                headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
-                json={
-                    "model": GROQ_MODEL,
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "max_tokens": 300,
-                    "temperature": 0.7,
-                },
-            )
-            response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"].strip()
-    except Exception:
+        return float(value) if value else None
+    except ValueError:
         return None
 
 
-async def build_cycle_context(user_id: str, context_cycles: int = 6) -> dict:
-    rows = await cycle_repo.get_cycles_by_user(user_id, limit=context_cycles, offset=0)
+async def _call_provider(name: str, prompt: str) -> str:
+    build = _PROVIDERS.get(name)
+    if build is None:
+        raise ProviderError("unknown_provider")
+    request = build(prompt)
+    if request is None:
+        raise ProviderError("not_configured")
+    url, headers, body = request
 
-    if not rows:
-        return {
-            "fase_actual": None,
-            "dia_del_ciclo": None,
-            "duracion_promedio": 28,
-            "sintomas_frecuentes": [],
-            "intensidad_actual": None,
-            "dias_hasta_siguiente": None,
-        }
+    try:
+        async with httpx.AsyncClient(timeout=settings.LLM_TIMEOUT_SECONDS) as client:
+            response = await client.post(url, headers=headers, json=body)
+    except httpx.TimeoutException:
+        raise ProviderError("timeout")
+    except httpx.HTTPError:
+        raise ProviderError("network_error", cooldown=True)
 
-    cycles = [dict(row._mapping) for row in rows]
-    cycles.sort(key=lambda c: c["start_date"])
+    if response.status_code == 429:
+        raise ProviderError("rate_limited", cooldown=True, retry_after=_parse_retry_after(response))
+    if response.status_code >= 400:
+        # 5xx: caída del proveedor. 400/404: modelo retirado o parámetro inválido,
+        # que no se arregla solo. En ambos casos conviene dejarlo descansar.
+        raise ProviderError(f"http_{response.status_code}", cooldown=True)
 
-    last_cycle = cycles[-1]
-    last_cycle_dict = {
-        "start_date": last_cycle["start_date"],
-        "end_date": last_cycle.get("end_date"),
-    }
-
-    phase, phase_day = calculate_current_phase(last_cycle_dict)
-
-    if len(cycles) == 1:
-        avg_duration = 28.0
-    else:
-        durations = [
-            (cycles[i]["start_date"] - cycles[i - 1]["start_date"]).days
-            for i in range(1, len(cycles))
-        ]
-        avg_duration = round(sum(durations) / len(durations), 1)
-
-    predicted_next = last_cycle["start_date"] + timedelta(days=int(round(avg_duration)))
-    days_until_next = (predicted_next - date.today()).days if predicted_next > date.today() else 0
-
-    # ── Síntomas frecuentes desde la BD ───────────────────────────
-    cycle_ids = [c["id"] for c in cycles]
-    symptom_rows = await analytics_repo.get_symptom_frequencies(cycle_ids, limit=5)
-
-    sintomas_frecuentes = []
-    intensidad_actual = None
-    if symptom_rows:
-        sintomas_frecuentes = [s["name"] for s in symptom_rows]
-        intensidad_actual = str(symptom_rows[0]["avg_intensity"])
-
-    # ── Intensidad del día de hoy desde daily_logs ────────────────
-    today = date.today()
-    log = await daily_log_repo.get_daily_log_by_date(last_cycle["id"], today)
-    if log:
-        log_id = str(log._mapping["id"])
-        today_symptoms = await symptom_repo.get_symptoms_by_log(log_id)
-        if today_symptoms:
-            intensities = [s["intensity"] for s in today_symptoms]
-            avg_today = round(sum(intensities) / len(intensities), 1)
-            intensidad_actual = str(avg_today)
-
-    return {
-        "fase_actual": phase,
-        "dia_del_ciclo": phase_day,
-        "duracion_promedio": avg_duration,
-        "sintomas_frecuentes": sintomas_frecuentes,
-        "intensidad_actual": intensidad_actual or "moderada",
-        "dias_hasta_siguiente": days_until_next,
-    }
+    try:
+        text = _extract_text(response.json())
+    except ValueError:
+        raise ProviderError("invalid_json")
+    if not text:
+        raise ProviderError("empty_response")
+    return text
 
 
-async def get_insight(question: str, cycle_context: dict) -> dict:
-    prompt = build_context_prompt(cycle_context, question)
+def _in_cooldown(name: str) -> bool:
+    return _cooldown_until.get(name, 0.0) > time.monotonic()
 
-    ollama_response = await _call_ollama(prompt)
-    if ollama_response:
-        return {
-            "insight": ollama_response,
-            "source": f"ollama/{OLLAMA_MODEL}",
-            "disclaimer": "EVA no reemplaza el consejo medico profesional.",
-        }
 
-    groq_response = await _call_groq(prompt)
-    if groq_response:
-        return {
-            "insight": groq_response,
-            "source": f"groq/{GROQ_MODEL}",
-            "disclaimer": "EVA no reemplaza el consejo medico profesional.",
-        }
+def _start_cooldown(name: str, retry_after: Optional[float]) -> None:
+    seconds = retry_after if retry_after else settings.LLM_PROVIDER_COOLDOWN_SECONDS
+    _cooldown_until[name] = time.monotonic() + seconds
 
-    raise RuntimeError("LLM service unavailable")
+
+async def generate(prompt: str) -> Optional[LlmResult]:
+    """Prueba los proveedores en orden y devuelve la primera respuesta válida.
+
+    Devuelve None si ninguno responde; el llamador decide el respaldo.
+    """
+    for name in settings.llm_providers_list:
+        if _in_cooldown(name):
+            continue
+        try:
+            text = await _call_provider(name, prompt)
+        except ProviderError as exc:
+            # Solo proveedor y motivo: nunca el prompt ni la respuesta (RX-05)
+            logger.warning("llm provider failed: provider=%s reason=%s", name, exc.reason)
+            if exc.cooldown:
+                _start_cooldown(name, exc.retry_after)
+            continue
+        _cooldown_until.pop(name, None)
+        return LlmResult(text=text, provider=name)
+    return None

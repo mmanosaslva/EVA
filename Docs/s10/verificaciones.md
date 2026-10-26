@@ -37,6 +37,7 @@
 | ¿Cuánto rinde? | `@cf/openai/gpt-oss-20b` cuesta ~18.182 neurons por millón de tokens de entrada y ~27.273 por millón de salida. Una respuesta típica de EVA (~500 tokens de entrada y ~300 de salida) usa ~17 neurons, lo que da **~580 respuestas al día** gratis como respaldo. Es una estimación, no una medición | [Pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/) |
 | Límite de velocidad | **300 peticiones por minuto** en generación de texto (los modelos que exigen plan pago tienen menos) | [Limits](https://developers.cloudflare.com/workers-ai/platform/limits/) |
 | ¿Qué modelo usar? | **`@cf/openai/gpt-oss-20b`**: es el mismo modelo que en Groq, así que el estilo de las respuestas no cambia al hacer failover (RX-06), y no exige plan pago. Alternativa multilingüe: `@cf/zai-org/glm-4.7-flash` ("100+ languages"). **Ojo:** `@cf/meta/llama-3.1-8b-instruct` sigue en la página de precios pero ya no aparece en el catálogo; no usarlo | [Models](https://developers.cloudflare.com/workers-ai/models/), [Pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/) |
+| ¿Funciona el endpoint compatible con OpenAI con `gpt-oss-20b`? | **Sí.** Prueba manual (2026-10-26) con las keys de Mery: `POST /accounts/{id}/ai/v1/chat/completions` respondió en español; el failover Groq (key inválida, 401) → Cloudflare funcionó, y con la key válida volvió a responder Groq | `llm_service.generate`, prueba manual de T3 |
 
 ## 4. Otros (verificados antes)
 

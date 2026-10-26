@@ -51,6 +51,7 @@ export function useInsights(): UseInsightsReturn {
         role: "eva",
         content: data.insight,
         timestamp: new Date().toISOString(),
+        isAutomatic: data.is_automatic,
       };
       setMessages((prev) => [...prev, evaMsg]);
     } catch {

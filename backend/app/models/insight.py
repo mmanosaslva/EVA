@@ -10,10 +10,11 @@ class InsightRequest(BaseModel):
 
 
 class InsightResponse(BaseModel):
+    # Sin proveedor ni modelo: el cambio entre LLMs es invisible para la usuaria (RX-06)
     insight: str
     phase: Optional[str] = None
-    source: str
     disclaimer: str = "EVA no reemplaza el consejo médico profesional."
+    is_automatic: bool = False
 
 
 class InsightHistoryItem(BaseModel):
@@ -21,7 +22,7 @@ class InsightHistoryItem(BaseModel):
     question: str
     insight: str
     phase: Optional[str] = None
-    source: str
+    is_automatic: bool = False
     created_at: datetime
 
 
