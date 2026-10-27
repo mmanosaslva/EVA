@@ -22,7 +22,7 @@
 
 **Orden de ejecución (2026-10-26):**
 
-T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → **T4 → T24 → T25** → T22 → T23 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T15 → T16 → T17 → T18 → T19
+T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → T4 ✔ → **T24 → T25** → T22 → T23 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T15 → T16 → T17 → T18 → T19
 
 - T1 ahora es solo el entorno local con Python 3.12; se puede hacer en cualquier momento antes de T3.
 - T7 se fusionó en T20 (CI sin Supabase y fuera Render).
@@ -113,7 +113,7 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → **T4 → T24 
 - **Commit:** `[S10] fix(llm): chatbot con Groq y Cloudflare Workers AI con failover y respaldo por reglas`.
 
 ### T4 — Borrado total de cuenta
-- **Estado (2026-10-26):** código HECHO (`account_service`/`account_repo`, limpieza local en el frontend, migración 009 y `Docs/s10/sql/T4-borrado-total.sql`). Falta que Mery ejecute el SQL en Neon con un snapshot previo.
+- **Estado (2026-10-26):** HECHA. Código (`account_service`/`account_repo`, limpieza local en el frontend, migración 009) y SQL aplicado por Mery en Neon (branch `ep-bold-bread`, base `neondb`) con snapshot previo: 6 perfiles huérfanos borrados, FK `users_id_auth_user_fkey` con `ON DELETE CASCADE` y trigger sin reasignación por email. Verificado: 0 huérfanos, 13 cuentas = 13 perfiles. Nota: `alembic_version` ya estaba en `009` sin la migración aplicada (stamp previo de origen desconocido), por eso se omitió el paso 5 del SQL.
 - **Qué:** `restructuracion.md` §3.2.
 - **Cierra:** DP-13, DP-14, DP-16 (documentación).
 - **Depende de:** T1.
