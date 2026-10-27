@@ -4,7 +4,7 @@ Verificación manual después de cada deploy a producción (y del primero, T25).
 
 Anota en el PR la fecha, la URL probada y el resultado de cada punto.
 
-## 1. Antes de mergear a `main`
+## 1. Antes de mergear a la Production Branch (`develop` hasta T19)
 
 ```bash
 # Backend
