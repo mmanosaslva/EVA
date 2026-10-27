@@ -1,9 +1,8 @@
-import math
 from datetime import date, timedelta
+from statistics import pstdev
 
 from app.repositories import cycle_repo
-from app.repositories.ml_repo import get_ml_model
-from app.services.ml_service import predict_next_cycle as ml_predict
+from app.services.cycle_forecast import DEFAULT_CYCLE_LENGTH, median_length
 from app.utils.cycle_utils import calculate_current_phase
 
 
@@ -16,6 +15,11 @@ def _fertile_window(predicted_start: date) -> dict:
 
 
 async def predict_next_cycle(user_id: str) -> dict:
+    """Predice el próximo ciclo con la mediana de las duraciones de la usuaria.
+
+    La mediana ganó la evaluación de T24 (Docs/s10/evaluacion-prediccion.md): mismo error que
+    el promedio en ciclos regulares e irregulares y mucho menor cuando hay un ciclo atípico.
+    """
     rows = await cycle_repo.get_cycles_by_user(user_id, limit=100, offset=0)
 
     if not rows:
@@ -23,6 +27,8 @@ async def predict_next_cycle(user_id: str) -> dict:
         return {
             "predicted_start_date": None,
             "confidence_range": {"early": None, "late": None},
+            "predicted_cycle_length": None,
+            "cycle_variability": 0.0,
             "days_until_next": None,
             "current_phase": phase,
             "current_phase_day": phase_day,
@@ -36,106 +42,36 @@ async def predict_next_cycle(user_id: str) -> dict:
     cycles = [row if isinstance(row, dict) else dict(row._mapping) for row in rows]
     cycles.sort(key=lambda c: c["start_date"])
     last_cycle = cycles[-1]
-    last_cycle_dict = {
+
+    durations = [
+        (cycles[i]["start_date"] - cycles[i - 1]["start_date"]).days
+        for i in range(1, len(cycles))
+    ]
+    predicted_cycle_length = median_length(durations) if durations else DEFAULT_CYCLE_LENGTH
+    cycle_variability = round(pstdev(durations), 1) if len(durations) > 1 else 0.0
+
+    predicted_start_date = last_cycle["start_date"] + timedelta(days=int(round(predicted_cycle_length)))
+    margin = timedelta(days=int(cycle_variability))
+
+    phase, phase_day = calculate_current_phase({
         "start_date": last_cycle["start_date"],
         "end_date": last_cycle.get("end_date"),
-    }
-
-    try:
-        ml_model = await get_ml_model(user_id)
-        if ml_model and ml_model.is_active:
-            prophet_result = ml_predict(user_id, last_cycle["start_date"])
-            if prophet_result:
-                phase, phase_day = calculate_current_phase(last_cycle_dict)
-                days_until_next = (prophet_result["predicted_start_date"] - date.today()).days
-
-                return {
-                    "predicted_start_date": prophet_result["predicted_start_date"],
-                    "confidence_range": {
-                        "early": prophet_result["confidence_range"]["early"],
-                        "late": prophet_result["confidence_range"]["late"],
-                    },
-                    "days_until_next": days_until_next,
-                    "current_phase": phase,
-                    "current_phase_day": phase_day,
-                    "prediction_source": "prophet",
-                    "model_mae_days": float(ml_model.mae) if ml_model.mae else None,
-                    "cycles_used_for_training": ml_model.cycles_used,
-                    "fertile_window": _fertile_window(prophet_result["predicted_start_date"]),
-                    "has_sufficient_data": True,
-                }
-    except Exception:
-        pass
-
-    result = await predict_next_cycle_heuristic(user_id)
-    result["model_mae_days"] = None
-    result["cycles_used_for_training"] = None
-    return result
-
-
-async def predict_next_cycle_heuristic(user_id: str) -> dict:
-    rows = await cycle_repo.get_cycles_by_user(user_id, limit=100, offset=0)
-
-    if not rows:
-        phase, phase_day = calculate_current_phase(None)
-        return {
-            "predicted_start_date": None,
-            "confidence_range": {"early": None, "late": None},
-            "avg_cycle_length": 0.0,
-            "cycle_variability": 0.0,
-            "prediction_source": "heuristic",
-            "has_sufficient_data": False,
-            "last_cycle": None,
-            "current_phase": phase,
-            "current_phase_day": phase_day,
-            "fertile_window": {"start": None, "end": None},
-            "days_until_next": None,
-        }
-
-    cycles = [row if isinstance(row, dict) else dict(row._mapping) for row in rows]
-    cycles.sort(key=lambda c: c["start_date"])
-
-    last_cycle = cycles[-1]
-    last_cycle_dict = {
-        "start_date": last_cycle["start_date"],
-        "end_date": last_cycle.get("end_date"),
-    }
-
-    if len(cycles) == 1:
-        avg_cycle_length = 28.0
-        cycle_variability = 0.0
-    else:
-        durations = [
-            (cycles[i]["start_date"] - cycles[i - 1]["start_date"]).days
-            for i in range(1, len(cycles))
-        ]
-        avg_cycle_length = round(sum(durations) / len(durations), 1)
-        variance = sum((d - avg_cycle_length) ** 2 for d in durations) / len(durations)
-        cycle_variability = round(math.sqrt(variance), 1)
-
-    predicted_start_date = last_cycle["start_date"] + timedelta(days=int(round(avg_cycle_length)))
-
-    days_until_next = (predicted_start_date - date.today()).days
-
-    phase, phase_day = calculate_current_phase(last_cycle_dict)
-
-    confidence_early = predicted_start_date - timedelta(days=int(cycle_variability)) if cycle_variability > 0 else None
-    confidence_late = predicted_start_date + timedelta(days=int(cycle_variability)) if cycle_variability > 0 else None
-
-    ovulation_date = predicted_start_date - timedelta(days=14)
-    fertile_start = ovulation_date - timedelta(days=5)
-    fertile_end = ovulation_date + timedelta(days=1)
+    })
 
     return {
         "predicted_start_date": predicted_start_date,
-        "confidence_range": {"early": confidence_early, "late": confidence_late},
-        "avg_cycle_length": avg_cycle_length,
+        "confidence_range": {
+            "early": predicted_start_date - margin if cycle_variability > 0 else None,
+            "late": predicted_start_date + margin if cycle_variability > 0 else None,
+        },
+        "predicted_cycle_length": predicted_cycle_length,
         "cycle_variability": cycle_variability,
-        "prediction_source": "heuristic",
-        "has_sufficient_data": True,
-        "last_cycle": last_cycle_dict,
+        "days_until_next": (predicted_start_date - date.today()).days,
         "current_phase": phase,
         "current_phase_day": phase_day,
-        "fertile_window": {"start": fertile_start, "end": fertile_end},
-        "days_until_next": days_until_next,
+        "prediction_source": "heuristic",
+        "model_mae_days": None,
+        "cycles_used_for_training": None,
+        "fertile_window": _fertile_window(predicted_start_date),
+        "has_sufficient_data": True,
     }

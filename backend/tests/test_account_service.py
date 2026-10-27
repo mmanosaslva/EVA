@@ -4,7 +4,7 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy import func, insert, select
 
-from app.services import account_service, ml_service
+from app.services import account_service
 from tests.conftest import SEED_SYMPTOMS
 from tests.test_metadata import (
     auth_user_table,
@@ -84,17 +84,6 @@ class TestDeleteAccount:
         await account_service.delete_account(ANA)
         bea = await _counts(two_users, BEA)
         assert all(n == 1 for n in bea.values()), bea
-
-    async def test_deletes_model_file(self, two_users, tmp_path, monkeypatch):
-        monkeypatch.setattr(ml_service, "MODELS_DIR", tmp_path)
-        model = ml_service.get_model_path(ANA)
-        model.write_bytes(b"modelo")
-        await account_service.delete_account(ANA)
-        assert not model.exists()
-
-    async def test_missing_model_file_is_fine(self, two_users, tmp_path, monkeypatch):
-        monkeypatch.setattr(ml_service, "MODELS_DIR", tmp_path)
-        await account_service.delete_account(ANA)
 
     async def test_unknown_user_returns_404_and_deletes_nothing(self, two_users):
         with pytest.raises(HTTPException) as exc:

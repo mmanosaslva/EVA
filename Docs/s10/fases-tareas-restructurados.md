@@ -22,7 +22,7 @@
 
 **Orden de ejecución (2026-10-26):**
 
-T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → T4 ✔ → **T24 → T25** → T22 → T23 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T15 → T16 → T17 → T18 → T19
+T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → T4 ✔ → T24 ✔ → **T25** → T22 → T23 → T6 → T8 → T9 → T10 → T11 → T12 → T21 → T13 → T14 → T15 → T16 → T17 → T18 → T19
 
 - T1 ahora es solo el entorno local con Python 3.12; se puede hacer en cualquier momento antes de T3.
 - T7 se fusionó en T20 (CI sin Supabase y fuera Render).
@@ -340,6 +340,7 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → T4 ✔ → **
 - **Commit:** `[S10] chore(ops): backup diario de Neon cifrado con age a Google Drive`.
 
 ### T24 — Evaluar el modelo de predicción
+- **Estado (2026-10-27):** HECHA. Prophet se elimina: es peor que los métodos simples en los cuatro escenarios (en irregular, 1,1–1,5 días más de MAE). La predicción usa la mediana. El backend pasa de 611 MB a 296 MB de dependencias. Detalle en `evaluacion-prediccion.md`. Los datos sintéticos se generan en memoria en `scripts/evaluate_prediction.py`, porque `seed_test_data.py` escribe en la base real.
 - **Qué:** decidir con datos si Prophet aporta, o si conviene una alternativa más liviana (`restructuracion.md` §3.8).
   - Comparar con **datos sintéticos** (RX-10, `scripts/seed_test_data.py`), con validación *walk-forward* (predecir cada ciclo usando solo los anteriores).
   - **Métricas:** MAE en días, % de predicciones dentro de ±2 días, tiempo de cálculo y memoria.

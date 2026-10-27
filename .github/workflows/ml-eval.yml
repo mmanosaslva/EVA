@@ -1,12 +1,15 @@
-name: ML Evaluation
+name: Prediction Evaluation
+
+# Repite la evaluación de T24 (Docs/s10/evaluacion-prediccion.md) con los métodos simples.
+# Prophet ya no está en requirements.txt; para incluirlo hay que instalarlo aparte.
 
 on:
   pull_request:
     branches: [main, develop]
     paths:
-      - 'backend/app/services/ml_service.py'
-      - 'backend/app/repositories/cycle_repo.py'
-      - 'backend/scripts/evaluate_models.py'
+      - 'backend/app/services/cycle_forecast.py'
+      - 'backend/app/services/prediction_service.py'
+      - 'backend/scripts/evaluate_prediction.py'
       - '.github/workflows/ml-eval.yml'
 
 env:
@@ -14,7 +17,7 @@ env:
 
 jobs:
   evaluate:
-    name: Evaluate Prophet vs Heuristic
+    name: Evaluate prediction methods
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,12 +31,12 @@ jobs:
         run: |
           pip install -r backend/requirements.txt
 
-      - name: Run ML evaluation (synthetic)
+      - name: Run evaluation (synthetic, sin Prophet)
         run: |
-          python backend/scripts/evaluate_models.py --users 50 --cycles 10 --noise 5 --output eval_report.txt
+          python backend/scripts/evaluate_prediction.py --skip-prophet --users 200 | tee eval_report.md
 
       - name: Upload evaluation report
         uses: actions/upload-artifact@v4
         with:
-          name: ml-evaluation-report
-          path: eval_report.txt
+          name: prediction-evaluation-report
+          path: eval_report.md
