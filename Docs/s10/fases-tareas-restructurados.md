@@ -299,6 +299,7 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → T4 ✔ → T2
 - **Commit:** `[S10] docs(design): enlazar prototipos aprobados`.
 
 ### T22 — Módulo legal (Colombia)
+- **Antes de empezar:** EVA debe tener su propia cuenta de Brevo. Hasta T25 se usó temporalmente la de secop_monitor (ver T25, "Brevo para EVA").
 - **Qué:** RX-14.
   - Páginas `/legal/privacidad` (política de tratamiento) y `/legal/terminos`, con versión y fecha, enlazadas desde el registro, el login y el perfil.
   - Registro con dos checkboxes sin marcar: términos, y autorización expresa de datos sensibles y transferencia internacional. Más la declaración de mayoría de edad.
@@ -372,13 +373,18 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → T4 ✔ → T2
 | Vercel | Cuenta lista | Nada; los proyectos se crean en esta tarea |
 | Neon | Listo (cuenta de Mery, región `sa-east-1`) | Nada |
 | Groq / Cloudflare | Keys listas (T3) | Rotar la key de Groq expuesta en el chat |
-| Brevo | Cuenta lista | Crear el remitente "EVA" y una API key `eva` (ver abajo) |
+| Brevo | **Temporal (2026-10-27):** cuenta de Brevo de secop_monitor (otro proyecto de Mery), solo para pruebas | Crear en esa cuenta el remitente "EVA" y una API key `eva` exclusiva (ver abajo). Migrar a una cuenta propia de EVA **antes de T22** |
 | Sentry | No existe | **Opcional.** Se configura después de T25, si se quiere monitoreo de errores; la app funciona sin `SENTRY_DSN` |
 
 - **Brevo para EVA (antes del deploy):**
   1. *Senders, Domains & Dedicated IPs → Senders → Add a sender*: nombre `EVA` y un email que Mery pueda confirmar.
   2. *SMTP & API → API Keys → Generate*: nombre `eva`. Va solo en `backend/.env` y en Vercel.
   3. Limitación aceptada: sin dominio propio, los correos pueden caer en spam (`CRITERIOS_ISSUES.md`, L-01).
+  4. **Limitación temporal:** EVA no tiene cuenta de Brevo propia; mientras tanto usa la de secop_monitor:
+     - API key `eva` solo para EVA, revocable sin afectar a secop_monitor;
+     - remitente "EVA", nunca el de secop_monitor;
+     - la cuota gratuita (300 correos/día) se comparte entre los dos proyectos.
+     Para migrar: crear la cuenta de EVA, cambiar `BREVO_API_KEY` y `SMTP_FROM` en Vercel y en `backend/.env`, y hacer *Redeploy*; no hay que tocar código. Es obligatorio antes de T22, porque Brevo trata los emails de las usuarias y la política de privacidad debe nombrar al encargado del tratamiento.
 - **Qué se construye:**
   - **Backend como función Python de Vercel (RX-02):**
     - Punto de entrada ASGI para FastAPI.
