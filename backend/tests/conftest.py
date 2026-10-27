@@ -170,6 +170,14 @@ async def sqlite_engine(monkeypatch):
     monkeypatch.setattr("app.repositories.analytics_repo.daily_symptoms_table", _tm.tables["daily_symptoms"])
     monkeypatch.setattr("app.repositories.analytics_repo.symptoms_catalog_table", _tm.tables["symptoms_catalog"])
     monkeypatch.setattr("app.repositories.sync_repo.sync_operations_table", _tm.tables["sync_operations"])
+    monkeypatch.setattr("app.repositories.account_repo.engine", engine)
+    for name, table in (
+        ("auth_user_table", "user"), ("users_table", "users"), ("cycles_table", "cycles"),
+        ("daily_logs_table", "daily_logs"), ("daily_symptoms_table", "daily_symptoms"),
+        ("ml_models_table", "ml_models"), ("llm_insights_table", "llm_insights"),
+        ("sync_operations_table", "sync_operations"),
+    ):
+        monkeypatch.setattr(f"app.repositories.account_repo.{name}", _tm.tables[table])
 
     monkeypatch.setattr(
         "app.repositories.cycle_repo.cycles_table", _tm.tables["cycles"]

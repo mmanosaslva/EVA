@@ -161,9 +161,24 @@ EVA usa **SQLAlchemy Core** (query builder) en lugar del ORM por las siguientes 
 
 ## 3. Tablas
 
+### 3.0 Identidad: `"user"` (cuenta) y `users` (perfil) — actualizado 2026-10-26 (T4)
+
+Hay dos tablas de identidad, y es una **excepción documentada a 3NF** (`Docs/s10/reglas.md` RG-08):
+
+| Tabla | Dueño | Contenido |
+|---|---|---|
+| `"user"` | fastapi-users (ORM, `app/auth/db.py`) | Credenciales: email, hash de la contraseña, `is_active`, `is_verified`, `is_superuser` |
+| `users` | EVA (Core, `app/models/db_tables.py`) | Perfil; es el padre de todas las FK de datos de salud (`cycles`, `ml_models`, `llm_insights`, `sync_operations`) |
+
+- **Por qué dos:** fastapi-users exige su propio modelo ORM, y el resto del esquema (Core) ya colgaba de `users`. Unificarlas queda como decisión pendiente (`restructuracion.md` §5).
+- **Dato duplicado:** el email está en las dos tablas. La fuente de verdad es `"user".email`.
+- **Alta:** el trigger `trg_create_user_profile` (AFTER INSERT en `"user"`) crea el perfil con el **mismo id**. Desde la migración 009 **nunca reasigna perfiles por email**: en la versión 008 lo hacía, y un re-registro heredaba los datos de una cuenta borrada.
+- **Baja (RX-08):** la FK `users_id_auth_user_fkey` (`users.id → "user".id ON DELETE CASCADE`, migración 009) hace que borrar la cuenta borre el perfil y, en cascada, todos sus datos. Además, `account_repo.delete_all_user_data` borra todo explícitamente en una transacción, así que no depende de que la FK esté aplicada.
+- SQL para aplicar a mano: `Docs/s10/sql/T4-borrado-total.sql`.
+
 ### 3.1 users
 
-Almacena el perfil básico del usuario. El email y la autenticación los maneja Supabase Auth — esta tabla extiende el perfil con datos médicos relevantes.
+Almacena el perfil básico del usuario. *(Histórico: antes la autenticación la manejaba Supabase Auth; ver §3.0 para el modelo actual.)* Esta tabla extiende el perfil con datos médicos relevantes.
 
 | Columna | Tipo | Restricciones | Descripción |
 |---|---|---|---|
@@ -539,6 +554,8 @@ $$;
 - Nunca viola UNIQUE constraint → nunca devuelve 500
 
 ### 5.2 Trigger de limpieza: borrar `public.users` al borrar `auth.users`
+
+> **HISTÓRICO (Supabase).** Reemplazado por la FK de la migración 009 (§3.0).
 
 **Problema:** borrar un usuario desde el dashboard de Supabase (Authentication → Users)
 elimina la fila de `auth.users` pero deja la fila huérfana en `public.users`.
