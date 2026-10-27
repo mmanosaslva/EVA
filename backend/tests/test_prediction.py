@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from app.services.prediction_service import predict_next_cycle_heuristic, predict_next_cycle
+from app.services.prediction_service import predict_next_cycle
 from app.utils.cycle_utils import calculate_current_phase
 
 USER_ID = "550e8400-e29b-41d4-a716-446655440000"
@@ -38,10 +38,10 @@ class TestPredictEmpty:
     @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
     async def test_zero_cycles_returns_no_data(self, mock_get):
         mock_get.return_value = []
-        result = await predict_next_cycle_heuristic(USER_ID)
+        result = await predict_next_cycle(USER_ID)
         assert result["has_sufficient_data"] is False
         assert result["predicted_start_date"] is None
-        assert result["avg_cycle_length"] == 0.0
+        assert result["predicted_cycle_length"] is None
         assert result["cycle_variability"] == 0.0
         assert result["confidence_range"]["early"] is None
         assert result["confidence_range"]["late"] is None
@@ -54,9 +54,9 @@ class TestPredictSingleCycle:
     async def test_one_cycle_assumes_28_days(self, mock_get):
         start = date(2025, 6, 1)
         mock_get.return_value = [_make_cycle(start, date(2025, 6, 5))]
-        result = await predict_next_cycle_heuristic(USER_ID)
+        result = await predict_next_cycle(USER_ID)
         assert result["has_sufficient_data"] is True
-        assert result["avg_cycle_length"] == 28.0
+        assert result["predicted_cycle_length"] == 28.0
         assert result["cycle_variability"] == 0.0
         assert result["predicted_start_date"] == date(2025, 6, 29)
         assert result["confidence_range"]["early"] is None
@@ -74,9 +74,9 @@ class TestPredictMultipleCycles:
             _make_cycle(date(2025, 6, 26), date(2025, 6, 30)),
         ]
         mock_get.return_value = cycles
-        result = await predict_next_cycle_heuristic(USER_ID)
+        result = await predict_next_cycle(USER_ID)
         assert result["has_sufficient_data"] is True
-        assert result["avg_cycle_length"] == 28.0
+        assert result["predicted_cycle_length"] == 28.0
         assert result["cycle_variability"] == 0.0
         assert result["predicted_start_date"] == date(2025, 7, 24)
         assert result["prediction_source"] == "heuristic"
@@ -90,9 +90,9 @@ class TestPredictMultipleCycles:
             _make_cycle(date(2025, 3, 10), date(2025, 3, 15)),
         ]
         mock_get.return_value = cycles
-        result = await predict_next_cycle_heuristic(USER_ID)
+        result = await predict_next_cycle(USER_ID)
         assert result["has_sufficient_data"] is True
-        assert result["avg_cycle_length"] == 34.0
+        assert result["predicted_cycle_length"] == 34.0
         assert result["cycle_variability"] > 0
         assert result["predicted_start_date"] == date(2025, 4, 13)
         assert result["confidence_range"]["early"] is not None
@@ -106,8 +106,8 @@ class TestPredictMultipleCycles:
             _make_cycle(date(2025, 7, 3), date(2025, 7, 7)),
         ]
         mock_get.return_value = cycles
-        result = await predict_next_cycle_heuristic(USER_ID)
-        assert result["avg_cycle_length"] == 32.0
+        result = await predict_next_cycle(USER_ID)
+        assert result["predicted_cycle_length"] == 32.0
         assert result["cycle_variability"] == 0.0
         assert result["predicted_start_date"] == date(2025, 8, 4)
 
@@ -121,7 +121,7 @@ class TestPredictMultipleCycles:
             _make_cycle(date(2025, 3, 30), date(2025, 4, 3)),
         ]
         mock_get.return_value = cycles
-        result = await predict_next_cycle_heuristic(USER_ID)
+        result = await predict_next_cycle(USER_ID)
         assert result["has_sufficient_data"] is True
         assert result["cycle_variability"] > 0.0
         assert result["confidence_range"]["early"] is not None
@@ -143,10 +143,11 @@ class TestExactCriterias:
         ]
         cycles = [_make_cycle(s, s + timedelta(days=4)) for s in start_dates]
         mock_get.return_value = cycles
-        result = await predict_next_cycle_heuristic(USER_ID)
+        result = await predict_next_cycle(USER_ID)
         assert result["has_sufficient_data"] is True
-        assert result["avg_cycle_length"] == 28.5
-        assert result["predicted_start_date"] == date(2025, 5, 23)
+        # Duraciones 24, 32, 28, 30 → mediana 29 (el promedio daba 28,5).
+        assert result["predicted_cycle_length"] == 29.0
+        assert result["predicted_start_date"] == date(2025, 5, 24)
         assert result["cycle_variability"] > 0
         assert result["confidence_range"]["early"] is not None
         assert result["confidence_range"]["late"] is not None
@@ -165,11 +166,12 @@ class TestExactCriterias:
         ]
         cycles = [_make_cycle(s, s + timedelta(days=4)) for s in start_dates]
         mock_get.return_value = cycles
-        result = await predict_next_cycle_heuristic(USER_ID)
+        result = await predict_next_cycle(USER_ID)
         assert result["has_sufficient_data"] is True
         assert result["cycle_variability"] > 5.0
-        assert result["avg_cycle_length"] == 31.2
-        assert result["predicted_start_date"] == date(2025, 6, 6)
+        # Duraciones 19, 45, 23, 38 → mediana 30,5, que se redondea a 30 (redondeo bancario).
+        assert result["predicted_cycle_length"] == 30.5
+        assert result["predicted_start_date"] == date(2025, 6, 5)
         assert result["confidence_range"]["early"] is not None
         assert result["confidence_range"]["late"] is not None
         assert result["confidence_range"]["early"] < result["predicted_start_date"] < result["confidence_range"]["late"]
@@ -184,7 +186,7 @@ class TestFertileWindow:
             _make_cycle(date(2025, 6, 1), date(2025, 6, 5)),
         ]
         mock_get.return_value = cycles
-        result = await predict_next_cycle_heuristic(USER_ID)
+        result = await predict_next_cycle(USER_ID)
         fw = result["fertile_window"]
         assert fw["start"] is not None
         assert fw["end"] is not None
@@ -199,7 +201,7 @@ class TestDaysUntilNext:
             _make_cycle(date(2025, 6, 1), date(2025, 6, 5)),
         ]
         mock_get.return_value = cycles
-        result = await predict_next_cycle_heuristic(USER_ID)
+        result = await predict_next_cycle(USER_ID)
         assert isinstance(result["days_until_next"], int)
 
 
@@ -268,7 +270,7 @@ class TestMAE:
             known = cycles[:i]
             actual_start = cycles[i]["start_date"]
             mock_get.return_value = known
-            result = await predict_next_cycle_heuristic(USER_ID)
+            result = await predict_next_cycle(USER_ID)
             predicted = result["predicted_start_date"]
             if predicted is not None:
                 errors.append(abs((predicted - actual_start).days))
@@ -277,157 +279,31 @@ class TestMAE:
         assert result["prediction_source"] == "heuristic"
 
 
-class TestPredictNextCycle:
+class TestAtypicalCycle:
     @pytest.mark.asyncio
-    @patch("app.services.prediction_service.get_ml_model")
-    @patch("app.services.prediction_service.ml_predict")
     @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
-    async def test_prophet_active_returns_prophet_source(self, mock_cycles, mock_prophet, mock_ml):
-        cycles = [
+    async def test_one_long_cycle_does_not_shift_prediction(self, mock_get):
+        # Duraciones 28, 28, 56 (un periodo sin registrar), 28: el promedio daría 35 días.
+        start_dates = [date(2025, 1, 1)]
+        for length in (28, 28, 56, 28):
+            start_dates.append(start_dates[-1] + timedelta(days=length))
+        mock_get.return_value = [_make_cycle(s, s + timedelta(days=4)) for s in start_dates]
+        result = await predict_next_cycle(USER_ID)
+        assert result["predicted_cycle_length"] == 28.0
+        assert result["predicted_start_date"] == start_dates[-1] + timedelta(days=28)
+
+
+class TestResponseContract:
+    @pytest.mark.asyncio
+    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
+    async def test_keeps_fields_used_by_router_and_export(self, mock_get):
+        mock_get.return_value = [
             _make_cycle(date(2025, 5, 1), date(2025, 5, 5)),
             _make_cycle(date(2025, 5, 29), date(2025, 6, 2)),
         ]
-        mock_cycles.return_value = cycles
-        from tests.conftest import MockRow
-        mock_ml.return_value = MockRow({
-            "id": "ml-id",
-            "user_id": USER_ID,
-            "model_path": "/tmp/model.pkl",
-            "mae": 1.2,
-            "cycles_used": 7,
-            "trained_at": None,
-            "is_active": True,
-        })
-        mock_prophet.return_value = {
-            "predicted_start_date": date(2025, 6, 26),
-            "confidence_range": {
-                "early": date(2025, 6, 22),
-                "late": date(2025, 6, 30),
-            },
-            "predicted_duration_days": 28.0,
-            "prediction_source": "prophet",
-        }
-
         result = await predict_next_cycle(USER_ID)
-
-        assert result["prediction_source"] == "prophet"
-        assert result["predicted_start_date"] == date(2025, 6, 26)
-        assert result["model_mae_days"] == 1.2
-        assert result["cycles_used_for_training"] == 7
-        assert result["confidence_range"]["early"] == date(2025, 6, 22)
-        assert result["confidence_range"]["late"] == date(2025, 6, 30)
-        assert result["fertile_window"]["start"] is not None
-        assert result["fertile_window"]["end"] is not None
-        assert result["days_until_next"] is not None
+        assert result["prediction_source"] == "heuristic"
+        assert result["model_mae_days"] is None
+        assert result["cycles_used_for_training"] is None
         assert result["current_phase"] is not None
-        assert result["current_phase_day"] is not None
-
-    @pytest.mark.asyncio
-    @patch("app.services.prediction_service.get_ml_model")
-    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
-    async def test_no_ml_model_falls_back_to_heuristic(self, mock_cycles, mock_ml):
-        cycles = [
-            _make_cycle(date(2025, 5, 1), date(2025, 5, 5)),
-            _make_cycle(date(2025, 5, 29), date(2025, 6, 2)),
-        ]
-        mock_cycles.return_value = cycles
-        mock_ml.return_value = None
-
-        result = await predict_next_cycle(USER_ID)
-
-        assert result["prediction_source"] == "heuristic"
-        assert result["predicted_start_date"] is not None
-        assert result["model_mae_days"] is None
-        assert result["cycles_used_for_training"] is None
-
-    @pytest.mark.asyncio
-    @patch("app.services.prediction_service.get_ml_model")
-    @patch("app.services.prediction_service.ml_predict")
-    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
-    async def test_prophet_returns_none_falls_back(self, mock_cycles, mock_prophet, mock_ml):
-        cycles = [
-            _make_cycle(date(2025, 5, 1), date(2025, 5, 5)),
-            _make_cycle(date(2025, 5, 29), date(2025, 6, 2)),
-        ]
-        mock_cycles.return_value = cycles
-        from tests.conftest import MockRow
-        mock_ml.return_value = MockRow({
-            "id": "ml-id",
-            "user_id": USER_ID,
-            "model_path": "/tmp/model.pkl",
-            "mae": 1.2,
-            "cycles_used": 7,
-            "trained_at": None,
-            "is_active": True,
-        })
-        mock_prophet.return_value = None
-
-        result = await predict_next_cycle(USER_ID)
-
-        assert result["prediction_source"] == "heuristic"
-        assert result["model_mae_days"] is None
-        assert result["cycles_used_for_training"] is None
-
-    @pytest.mark.asyncio
-    @patch("app.services.prediction_service.get_ml_model")
-    @patch("app.services.prediction_service.ml_predict")
-    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
-    async def test_prophet_exception_falls_back(self, mock_cycles, mock_prophet, mock_ml):
-        cycles = [
-            _make_cycle(date(2025, 5, 1), date(2025, 5, 5)),
-            _make_cycle(date(2025, 5, 29), date(2025, 6, 2)),
-        ]
-        mock_cycles.return_value = cycles
-        from tests.conftest import MockRow
-        mock_ml.return_value = MockRow({
-            "id": "ml-id",
-            "user_id": USER_ID,
-            "model_path": "/tmp/model.pkl",
-            "mae": 1.2,
-            "cycles_used": 7,
-            "trained_at": None,
-            "is_active": True,
-        })
-        mock_prophet.side_effect = RuntimeError("Prophet crash")
-
-        result = await predict_next_cycle(USER_ID)
-
-        assert result["prediction_source"] == "heuristic"
-
-    @pytest.mark.asyncio
-    @patch("app.services.prediction_service.get_ml_model")
-    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
-    async def test_zero_cycles_returns_insufficient_data(self, mock_cycles, mock_ml):
-        mock_cycles.return_value = []
-
-        result = await predict_next_cycle(USER_ID)
-
-        assert result["has_sufficient_data"] is False
-        assert result["predicted_start_date"] is None
-        assert result["prediction_source"] == "heuristic"
-
-    @pytest.mark.asyncio
-    @patch("app.services.prediction_service.get_ml_model")
-    @patch("app.services.prediction_service.ml_predict")
-    @patch("app.services.prediction_service.cycle_repo.get_cycles_by_user")
-    async def test_inactive_model_falls_back(self, mock_cycles, mock_prophet, mock_ml):
-        cycles = [
-            _make_cycle(date(2025, 5, 1), date(2025, 5, 5)),
-            _make_cycle(date(2025, 5, 29), date(2025, 6, 2)),
-        ]
-        mock_cycles.return_value = cycles
-        from tests.conftest import MockRow
-        mock_ml.return_value = MockRow({
-            "id": "ml-id",
-            "user_id": USER_ID,
-            "model_path": "/tmp/model.pkl",
-            "mae": 1.2,
-            "cycles_used": 7,
-            "trained_at": None,
-            "is_active": False,
-        })
-
-        result = await predict_next_cycle(USER_ID)
-
-        assert result["prediction_source"] == "heuristic"
-        mock_prophet.assert_not_called()
+        assert result["days_until_next"] is not None

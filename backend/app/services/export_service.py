@@ -138,7 +138,7 @@ async def export_pdf(user_id: str, cycles_back: int = 6) -> bytes:
     pdf.cell(0, 8, "3. Prediccion del proximo ciclo", new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", "", 10)
     if prediction_result["has_sufficient_data"]:
-        fuente = "Prophet (ML)" if prediction_result["prediction_source"] == "prophet" else "Heuristica (promedio)"
+        fuente = "Mediana de la duracion de tus ciclos"
         pdf.cell(0, 6, f"Fuente: {fuente}", new_x="LMARGIN", new_y="NEXT")
         if prediction_result["predicted_start_date"]:
             pdf.cell(0, 6, f"Fecha estimada de inicio: {prediction_result['predicted_start_date']}", new_x="LMARGIN", new_y="NEXT")
