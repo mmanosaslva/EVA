@@ -87,10 +87,13 @@ TRUNCATE public.rate_limits;
 3. **Framework, build y output:** no los cambies; los define `vercel.json` (Vite, `cd frontend && npm run build`, `frontend/dist`).
 4. Carga las variables de entorno de la sección 5 **antes** del primer deploy.
 5. *Deploy*.
+6. *Settings → Git → Production Branch*: **`develop`**. Después, *Deployments → Redeploy* del último commit de `develop`.
+
+**Por qué `develop` y no `main`:** `main` es la rama por defecto del repo, pero va muy por detrás de `develop`: su último merge es el PR #37, de la época de Supabase, sin `vercel.json` ni `api/`. Si Vercel desplegara `main`, publicaría ese código viejo. La Production Branch vuelve a `main` en **T19**, cuando `main` quede al día. Si el primer deploy del paso 5 sale de `main` y falla, es esperado: se corrige con este paso.
 
 **Región:** `vercel.json` fija `gru1` (São Paulo), junto a Neon. Comprueba en *Settings → Functions* que la región sea `gru1`. Si el plan Hobby no lo permite, anótalo en `Docs/s10/verificaciones.md` y deja la región que Vercel asigne; T15 mide la latencia.
 
-**Deploys automáticos:** cada push a `main` despliega producción, y cada PR recibe su URL de preview.
+**Deploys automáticos:** cada push a la Production Branch (`develop` hasta T19) despliega producción, y cada PR recibe su URL de preview.
 
 ---
 
