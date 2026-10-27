@@ -5,11 +5,17 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'api/**'
+      - 'requirements.txt'
+      - 'vercel.json'
       - '.github/workflows/backend.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'backend/**'
+      - 'api/**'
+      - 'requirements.txt'
+      - 'vercel.json'
       - '.github/workflows/backend.yml'
 
 env:
@@ -31,7 +37,7 @@ jobs:
         run: pip install "$(grep -E '^ruff==' backend/requirements-dev.txt)"
 
       - name: Run Ruff
-        run: ruff check backend/
+        run: ruff check backend/ api/
 
   test:
     name: Test (pytest)
@@ -47,7 +53,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r backend/requirements.txt
+          # Igual que Vercel: desde el requirements.txt de la raíz, que incluye el del backend.
+          pip install -r requirements.txt
           pip install -r backend/requirements-dev.txt
 
       - name: Run tests

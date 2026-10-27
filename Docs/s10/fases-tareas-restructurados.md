@@ -361,6 +361,7 @@ T0 ✔ → T2 ✔ → T1 ✔ → T3 ✔ → T5 ✔ → T20 ✔ → T4 ✔ → T2
 - **Commit:** `[S10] feat(ml): evaluar métodos de predicción y adoptar el de menor error`.
 
 ### T25 — Deploy desde cero en Vercel (frontend + backend)
+- **Estado (2026-10-27):** código y docs HECHOS. Es un solo proyecto de Vercel: el frontend es estático y el backend va en `api/index.py`, montado bajo `/api`; cada preview trae su propio backend con un branch de Neon aparte. Se quitaron el keepalive y el `create_all` de arranque. El rate limit pasa a Neon (tabla `rate_limits`, `core/rate_limit.py`), sale slowapi y se usa `NullPool` en Vercel. Se reescribieron `DEPLOY.md`, `DEPLOY_CHECKLIST.md` y `GUIA_ENV.md`. **Falta (Mery):** ejecutar `sql/T25-rate-limits.sql` en Neon (producción y `preview`), crear el branch `preview`, crear el proyecto en Vercel, cargar las variables y hacer la prueba manual de `DEPLOY_CHECKLIST.md`.
 - **Contexto (2026-10-26):**
   - **No hay nada desplegado.** El dev anterior manejaba Render y Vercel en cuentas propias; el servicio de Render nunca existió (los `render.yaml` se borraron en T20).
   - Desde S10, **todo vive en cuentas de Mery**: GitHub (`mmanosaslva/EVA`), Vercel, Neon, Brevo, Groq y Cloudflare. Ninguna cuenta del equipo anterior es necesaria.

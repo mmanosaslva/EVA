@@ -27,7 +27,7 @@ async def _send_email(to_email: str, subject: str, html_body: str):
 
 
 async def send_reset_password_email(email: str, token: str):
-    link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+    link = f"{settings.frontend_base_url}/reset-password?token={token}"
     html = f"""\
 <html>
 <body style="font-family: Arial, sans-serif; background: #f4f0f8; padding: 20px;">
@@ -50,7 +50,7 @@ async def send_reset_password_email(email: str, token: str):
 
 
 async def send_verification_email(email: str, token: str):
-    link = f"{settings.FRONTEND_URL}/verify-email?token={token}"
+    link = f"{settings.frontend_base_url}/verify-email?token={token}"
     html = f"""\
 <html>
 <body style="font-family: Arial, sans-serif; background: #f4f0f8; padding: 20px;">

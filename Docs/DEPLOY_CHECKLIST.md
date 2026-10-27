@@ -1,82 +1,16 @@
-# Deploy Checklist — EVA
+# EVA — Checklist de deploy
 
-> Checklist para asegurar que el deploy a producción no tenga errores.
+Verificación manual después de cada deploy a producción (y del primero, T25). Cómo desplegar: [`DEPLOY.md`](DEPLOY.md).
 
-## 1. Variables de Entorno
+Anota en el PR la fecha, la URL probada y el resultado de cada punto.
 
-### Render (Backend)
-| Variable | Dónde obtenerla |
-|----------|----------------|
-| `DATABASE_URL` | Supabase → Project Settings → Database → Connection string (pooler) |
-| `SUPABASE_URL` | Supabase → Project Settings → API → Project URL |
-| `SUPABASE_ANON_KEY` | Supabase → Project Settings → API → anon public |
-| `SUPABASE_JWT_SECRET` | Supabase → Project Settings → API → JWT Secret |
-| `SENTRY_DSN` | Sentry → Projects → FastAPI → DSN |
-| `GROQ_API_KEY` | https://console.groq.com (opcional, para fallback de LLM) |
-| `ENVIRONMENT` | `production` |
-| `OLLAMA_BASE_URL` | No se usa en producción (Render no tiene Ollama) |
+## 1. Antes de mergear a `main`
 
-> ⚠️ `OLLAMA_BASE_URL` quedará sin efecto en producción. El LLM usará Groq como fallback si `GROQ_API_KEY` está configurada. Si no, el chat de insights devolverá 503.
-
-### Vercel (Frontend)
-| Variable | Dónde obtenerla |
-|----------|----------------|
-| `VITE_SUPABASE_URL` | Supabase → Project Settings → API → Project URL |
-| `VITE_SUPABASE_ANON_KEY` | Supabase → Project Settings → API → anon public |
-| `VITE_API_URL` | URL del backend en Render (ej: `https://eva-api.onrender.com`) |
-| `VITE_SENTRY_DSN` | Sentry → Projects → React → DSN |
-| `VITE_ENVIRONMENT` | `production` |
-
-## 2. CORS
-
-En `backend/app/main.py`, las origins permitidas son:
-```
-"http://localhost:5173"
-"http://localhost:3000"
-```
-
-**Antes del deploy**, Meriyei debe agregar el dominio de Vercel:
-```
-"https://eva-xi-nine.vercel.app"
-```
-
-## 3. Sentry — Data Scrubbing
-
-Ya está configurado el scrubbing automático:
-- Backend: filtra `authorization`, `cookie`, `email`, `user_id`, `password`, `birth_date` antes de enviar a Sentry
-- Frontend: filtra `authorization` y `token`
-
-No es necesario hacer nada extra, pero **verificar** yendo a Sentry dashboard → Issues y confirmar que no aparecen datos personales.
-
-## 4. Dependencias faltantes
-
-En el entorno local, instalar:
-```bash
-pip install fpdf2 sentry-sdk
-```
-
-Están en `requirements.txt` pero hay que correr `pip install -r requirements.txt` después de hacer pull.
-
-## 5. Cron Job de ML (Render)
-
-Joshua configuró `render.yaml` con el cron de reentrenamiento nocturno.
-- Asegurarse de que Render tenga un **Persistent Disk** montado en `/ml_models/`
-- Si no, los modelos `.pkl` se borran en cada deploy
-
-## 6. Base de datos
-
-Antes del deploy:
-1. Ejecutar el schema completo de `DATABASE_SCHEMA.md` en Supabase SQL Editor
-2. Verificar que `symptoms_catalog` tenga los 30 síntomas seed
-3. Verificar RLS (Row Level Security) activo en todas las tablas
-
-## 7. Build y tests
-
-Siempre verificar antes de mergear a main:
 ```bash
 # Backend
 cd backend
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
+ruff check .
 python -m pytest -q
 
 # Frontend
@@ -84,11 +18,39 @@ cd frontend
 npm ci
 npm run build
 npm run test:run
-npx playwright test           # E2E (opcional, requiere servidor corriendo)
 ```
 
-## 8. Documentación
+- [ ] El CI del PR está en verde.
+- [ ] Si el PR trae un cambio de esquema, su SQL (`Docs/s10/sql/`) ya está aplicado **con snapshot previo** en producción y en el branch `preview` de Neon.
 
-- `README.md` — Daniel actualiza con instrucciones de setup
-- `ENDPOINTS.md` — Meriyei actualiza con endpoints finales
-- `ML_STRATEGY.md` — Madeleine actualiza con MAE reales
+## 2. Build en Vercel
+
+- [ ] El build terminó sin errores.
+- [ ] La función `api/index.py` pesa menos de 500 MB (lo dice el log del build).
+- [ ] La región de la función es `gru1` (*Settings → Functions*), o el cambio quedó anotado en `Docs/s10/verificaciones.md`.
+
+## 3. Prueba manual en producción
+
+Con una cuenta de prueba (no la personal), en `https://<proyecto>.vercel.app`:
+
+- [ ] `GET /api/health` responde `200`.
+- [ ] **Registro:** llega el email de verificación y su link abre la URL de producción.
+- [ ] **Verificación de email:** el link activa la cuenta.
+- [ ] **Login** y **logout**.
+- [ ] **Recuperar contraseña:** llega el email y el link permite cambiarla.
+- [ ] **Ciclos:** crear, editar y borrar un ciclo.
+- [ ] **Síntomas:** registrar un día con síntomas.
+- [ ] **Predicción:** el dashboard muestra la fecha estimada del próximo ciclo.
+- [ ] **Chatbot:** responde una pregunta.
+- [ ] **Export:** descargar el CSV y el PDF.
+- [ ] **Borrado de cuenta:** borrar la cuenta de prueba; después, en Neon, el conteo de huérfanos da 0 (`Docs/s10/sql/T4-borrado-total.sql`, paso 6).
+
+## 4. Previews
+
+- [ ] Un PR de prueba genera su URL de preview.
+- [ ] Registrarse en el preview **no** crea la cuenta en la base de producción: la cuenta aparece en el branch `preview` de Neon y no en el de producción.
+
+## 5. Privacidad
+
+- [ ] Si Sentry está configurado: en *Issues* no aparecen emails, tokens ni datos de ciclos.
+- [ ] Ninguna clave aparece en el repo: `git grep -nE "gsk_[A-Za-z0-9]{20,}|xkeysib-[A-Za-z0-9]{20,}"` no devuelve nada (los placeholders como `gsk_...` no cuentan).

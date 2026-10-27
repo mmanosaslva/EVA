@@ -1,5 +1,17 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "cd frontend && npm ci",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
+  "regions": ["gru1"],
+  "functions": {
+    "api/index.py": {
+      "excludeFiles": "{frontend/**,Docs/**,docs/**,eva_contexto/**,ml_models/**,backend/tests/**,backend/scripts/**,backend/migrations/**,backend/venv/**,backend/venv-*/**,**/node_modules/**,**/__pycache__/**,**/.pytest_cache/**,**/.ruff_cache/**}"
+    }
+  },
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

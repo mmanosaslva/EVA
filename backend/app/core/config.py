@@ -18,10 +18,12 @@ class Settings(BaseSettings):
     CLOUDFLARE_AI_MODEL: str = "@cf/openai/gpt-oss-20b"
     SENTRY_DSN: str = ""
     CORS_ORIGINS: str = "http://localhost:5173"
+    # Las define Vercel en cada deploy: VERCEL="1" y VERCEL_URL = host del deploy (sin https://).
+    VERCEL: str = ""
     VERCEL_URL: str = ""
     BREVO_API_KEY: str = ""
     SMTP_FROM: str = ""
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = ""
     ENVIRONMENT: str = "development"
     APP_VERSION: str = "1.0.0"
 
@@ -33,6 +35,19 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def frontend_base_url(self) -> str:
+        """URL pública del frontend para los links de los emails.
+
+        En Vercel frontend y backend comparten dominio, así que un preview sin FRONTEND_URL
+        usa su propia URL y sus emails no apuntan a producción.
+        """
+        if self.FRONTEND_URL:
+            return self.FRONTEND_URL.rstrip("/")
+        if self.VERCEL_URL:
+            return f"https://{self.VERCEL_URL}"
+        return "http://localhost:5173"
 
     @property
     def llm_providers_list(self) -> list[str]:
