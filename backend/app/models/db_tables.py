@@ -1,6 +1,6 @@
 from sqlalchemy import (
     Table, Column, MetaData, UUID, String, Date, DateTime,
-    SmallInteger, Text, Numeric, Boolean, Integer,
+    SmallInteger, Text, Numeric, Boolean, Integer, BigInteger,
     ForeignKey, UniqueConstraint, CheckConstraint, Index,
     func,
 )
@@ -100,4 +100,13 @@ sync_operations_table = Table(
     Column("applied_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     CheckConstraint("type IN ('CREATE_CYCLE', 'UPDATE_CYCLE', 'DELETE_CYCLE', 'CREATE_DAILY_LOG', 'UPDATE_DAILY_LOG', 'DELETE_DAILY_LOG')", name="chk_sync_type"),
     CheckConstraint("status IN ('applied', 'skipped', 'failed')", name="chk_sync_status"),
+)
+
+# Contadores del rate limit (core/rate_limit.py). Viven en Neon porque en Vercel no hay
+# memoria compartida entre instancias. La clave es un hash: no guarda ni IP ni user_id.
+rate_limits_table = Table(
+    "rate_limits", metadata,
+    Column("bucket", String(64), primary_key=True),
+    Column("window_start", BigInteger, primary_key=True),
+    Column("hits", Integer, nullable=False),
 )

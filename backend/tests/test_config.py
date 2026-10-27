@@ -190,3 +190,21 @@ class TestSentryConfig:
         assert "/daily-logs" in source
         assert "/cycles" in source
         assert "/insights" in source
+
+
+class TestFrontendBaseUrl:
+    # _env_file=None: que el .env local no influya en el resultado.
+    def test_explicit_url_wins_and_drops_trailing_slash(self):
+        from app.core.config import Settings
+        s = Settings(_env_file=None, FRONTEND_URL="https://eva.vercel.app/", VERCEL_URL="eva-git-x.vercel.app")
+        assert s.frontend_base_url == "https://eva.vercel.app"
+
+    def test_preview_uses_its_own_deploy_url(self):
+        from app.core.config import Settings
+        s = Settings(_env_file=None, FRONTEND_URL="", VERCEL_URL="eva-git-x.vercel.app")
+        assert s.frontend_base_url == "https://eva-git-x.vercel.app"
+
+    def test_local_default(self):
+        from app.core.config import Settings
+        s = Settings(_env_file=None, FRONTEND_URL="", VERCEL_URL="")
+        assert s.frontend_base_url == "http://localhost:5173"

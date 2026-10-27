@@ -8,6 +8,7 @@ from app.models.db_tables import (
     ml_models_table,
     llm_insights_table,
     sync_operations_table,
+    rate_limits_table,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "ml_models_table",
     "llm_insights_table",
     "sync_operations_table",
+    "rate_limits_table",
 ]

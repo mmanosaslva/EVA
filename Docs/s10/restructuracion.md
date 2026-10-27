@@ -214,6 +214,7 @@ Restaurar Playwright con una arquitectura nueva: build de preview apuntando a un
 |---|---|
 | Proveedores de LLM | Groq + Cloudflare Workers AI, con failover transparente (§3.1) |
 | Hosting | 100 % Vercel; sale Render (§3.7). **Deploy desde cero** en cuentas de Mery: no hay nada desplegado y el servicio de Render nunca existió (T25) |
+| Proyectos de Vercel (2026-10-27) | **Uno solo** para frontend y backend: `/api/*` va a la función Python (`api/index.py`). Mismo dominio, sin CORS, y cada preview trae su propio backend con las variables *Preview*, que apuntan al branch `preview` de Neon. Con dos proyectos, los previews del frontend llamarían al backend de producción (T25, `Docs/DEPLOY.md`) |
 | Cuentas | Todo en cuentas de Mery: GitHub, Vercel, Neon, Brevo, Groq y Cloudflare. No se depende de cuentas del equipo anterior |
 | Emails | Brevo con remitente "EVA" sin dominio propio; riesgo de spam aceptado (`CRITERIOS_ISSUES.md` L-01) |
 | Sentry | Opcional; se configura después de T25. Sin `SENTRY_DSN` la app funciona igual |
